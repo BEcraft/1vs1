@@ -1,0 +1,16 @@
+name: 1vs1 BEcraft
+api:
+- 2.0.0
+- 2.1.0
+- 3.0.0
+- 3.0.0-ALPHA4
+main: BEcraft\Minigame\Main
+version: 1.0
+author: BEcraft
+commands:
+ practice:
+  default: op
+  description: Practice Commands
+ 
+ arena:
+  description: Join Practice Arenas
