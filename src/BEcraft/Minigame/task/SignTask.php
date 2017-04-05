@@ -30,9 +30,8 @@ class SignTask extends PluginTask{
 					$name = $config->get("Name");
 					$level = $config->get("Level");
 					$cantida = count(Server::getInstance()->getLevelByName($level)->getPlayers());
-					if(count($this->plugin->getServer()->getLevelByName($level)->getPlayers()) == 1){
-						$sign->setText($prefix, $name, T::AQUA.$level, T::YELLOW.$cantida."/2");
-						}else if(count($this->plugin->getServer()->getLevelByName($level)->getPlayers()) >= 2){
+					$sign->setText($prefix, $name, T::AQUA.$level, T::YELLOW.$cantida."/2");
+						 if($cantida >= 2){
 							$sign->setText($prefix, $name, T::AQUA.$level, T::RED."Running");
 							}
 					}

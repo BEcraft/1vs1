@@ -5,6 +5,7 @@ namespace BEcraft\Minigame\task;
 use pocketmine\scheduler\PluginTask;
 use BEcraft\Minigame\Main;
 use pocketmine\Server;
+use pocketmine\entity\Effect;
 use pocketmine\utils\TextFormat as T;
 use pocketmine\utils\Config;
 
@@ -39,6 +40,11 @@ class GameTask extends PluginTask{
 		$config->save();
 		foreach($this->getPlaying($game) as $player){
 			$player->sendPopup(T::YELLOW."Waiting for players: ".T::GOLD.$this->getCount($game)." | 2");
+			            $blind = Effect::getEffect(15);
+						$blind->setDuration(9999);
+						$blind->setAmplifier(10);
+						$blind->setVisible(false);
+						$player->addEffect($blind);
 					}
 	}else
 if($this->getCount($game) == 2){
@@ -48,6 +54,11 @@ if($this->getCount($game) == 2){
 		    $config->save();
 		    foreach($this->getPlaying($game) as $player){
 			$player->sendPopup(T::YELLOW."Time: ".T::GOLD.$this->getTime($this->time));
+			if($this->time == 499){
+				$player->sendMessage(T::GREEN."Game started, good luck!");
+				$player->removeAllEffects();
+				unset($this->plugin->move[$player->getName()]);
+				}
 			}
 		}else if($this->getCount($game) == 1 and $this->status == "running" and $this->time > 0){
 		$this->plugin->getServer()->getScheduler()->cancelTask($this->getTaskId());
@@ -77,7 +88,9 @@ if($this->getCount($game) == 2){
 		$config->save();
 		$this->time = 500;
 		}
-		}
+		}else if($this->getCount($game) == 0){
+			$this->plugin->getServer()->getScheduler()->cancelTask($this->getTaskId());
+			}
 	}
 	}//public function
 	
