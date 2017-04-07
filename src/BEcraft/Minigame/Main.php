@@ -69,7 +69,7 @@ class Main extends PluginBase implements Listener{
 	}
 	
 	public function updateSign(){
-	$this->getServer()->getScheduler()->scheduleRepeatingTask(new SignTask($this), 15)->getTaskId();
+	$this->getServer()->getScheduler()->scheduleRepeatingTask(new SignTask($this), 30)->getTaskId();
 		}
 	
 	public function updateStatus(){
@@ -168,6 +168,8 @@ class Main extends PluginBase implements Listener{
 	public function onJoinEvent(PlayerJoinEvent $e){
 	    $pl = $e->getPlayer();
 	    $pl->teleport(Server::getInstance()->getDefaultLevel()->getSafeSpawn());
+	$pl->getInventory()->clearAll();
+	$pl->removeAllEffects();
 		}
 		
 	public function signChange(SignChangeEvent $e){
@@ -179,7 +181,8 @@ class Main extends PluginBase implements Listener{
 				$arena = new Config($this->getDataFolder()."Arenas/".$name.".yml", Config::YAML);
 				$arena_name = $arena->get("Name");
 				$arena_level = $arena->get("Level");
-				$e->setLine(0, "practice");
+				$prefix = T::GRAY."[".T::YELLOW."Practice".T::GRAY."]".T::RESET;
+				$e->setLine(0, $prefix);
 				$e->setLine(1, $arena_name);
 				$e->setLine(2, $arena_level);
 				$e->setLine(3, "");
@@ -211,6 +214,8 @@ class Main extends PluginBase implements Listener{
 					if($this->getPlayers($game) == 0){
 						$this->playing[$p->getName()] = $p->getName();
 						$this->move[$p->getName()] = $p->getName();
+						$p->setGamemode(0);
+						$p->setFlying(false);
 						$blind = Effect::getEffect(15);
 						$blind->setDuration(9999);
 						$blind->setAmplifier(10);
@@ -262,6 +267,8 @@ class Main extends PluginBase implements Listener{
 						if($this->getPlayers($game) == 1){
 						$this->playing[$p->getName()] = $p->getName();
 						$this->move[$p->getName()] = $p->getName();
+						$p->setGamemode(0);
+						$p->setFlying(false);
 						$blind = Effect::getEffect(15);
 						$blind->setDuration(9999);
 						$blind->setAmplifier(10);
@@ -504,6 +511,8 @@ class Main extends PluginBase implements Listener{
 					if($this->getPlayers($game) == 0){
 						$this->playing[$sender->getName()] = $sender->getName();
 						$this->move[$sender->getName()] = $sender->getName();
+						$sender->setGamemode(0);
+						$sender->setFlying(false);
 						$blind = Effect::getEffect(15);
 						$blind->setDuration(9999);
 						$blind->setAmplifier(10);
@@ -555,6 +564,8 @@ class Main extends PluginBase implements Listener{
 						if($this->getPlayers($game) == 1){
 						$this->playing[$sender->getName()] = $sender->getName();
 						$this->move[$sender->getName()] = $sender->getName();
+						$sender->setGamemode(0);
+						$sender->setFlying(false);
 						$blind = Effect::getEffect(15);
 						$blind->setDuration(9999);
 						$blind->setAmplifier(10);
