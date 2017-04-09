@@ -18,6 +18,7 @@ use pocketmine\utils\Config;
 use pocketmine\tile\Sign;
 use pocketmine\event\entity\EntityLevelChangeEvent;
 use BEcraft\Minigame\task\GameTask;
+use BEcraft\Minigame\task\WinParticle;
 use BEcraft\Minigame\task\SignTask;
 use pocketmine\command\CommandSender;
 use pocketmine\command\Command;
@@ -27,6 +28,8 @@ use pocketmine\Player;
 use pocketmine\entity\Effect;
 use pocketmine\utils\TextFormat as T;
 use pocketmine\level\Position;
+use pocketmine\level\sound\EndermanTeleportSound;
+use pocketmine\level\sound\AnvilUseSound;
 use pocketmine\level\Level;
 
 class Main extends PluginBase implements Listener{
@@ -45,6 +48,15 @@ class Main extends PluginBase implements Listener{
 	
 	      /* Dont Move */
 	public $move = array();
+	
+	  /* Battle Request */
+	public $request = array();
+	
+	/* Who Send The Request */
+	public $sent = array();
+	
+	/* Arena Editor */
+	public $editor = array();
 	
 	public function onLoad(){
 	$this->getLogger()->info(T::GOLD."Loading");
@@ -70,7 +82,7 @@ class Main extends PluginBase implements Listener{
 	
 	public function updateSign(){
 	$this->getServer()->getScheduler()->scheduleRepeatingTask(new SignTask($this), 30)->getTaskId();
-		}
+	}
 	
 	public function updateStatus(){
 		if(!empty($this->getDataFolder()."Arenas/")){
@@ -84,6 +96,10 @@ class Main extends PluginBase implements Listener{
 				$arena->set("Status", "waiting");
 				$arena->save();
 				}
+			if(empty($arena->get("Type"))){
+				$arena->set("Type", "onevone");
+				$arena->save();
+				}
 			}
 		}
 		}
@@ -92,6 +108,10 @@ class Main extends PluginBase implements Listener{
 	public function newTask($game){
 		$this->getServer()->getScheduler()->scheduleRepeatingTask(new GameTask($this, $game), 30)->getTaskId();
 		}
+	
+	public function WinTask(Player $player){
+	$this->getServer()->getScheduler()->scheduleRepeatingTask(new WinParticle($this, $player), 10)->getTaskId();
+	}
 	
 	public function loadArenas(){
 		if(!empty($this->getDataFolder()."Arenas/")){
@@ -133,6 +153,19 @@ class Main extends PluginBase implements Listener{
 		}
 	if(in_array($p->getName(), $this->creator)){
 		unset($this->creator[$p->getName()]);
+		}
+	if(isset($this->request[$p->getName()])){
+		$player = $p->getServer()->getPlayer($this->request[$p->getName()]);
+	unset($this->sent[$player->getName()]);
+		unset($this->request[$p->getName()]);
+	}
+	if(isset($this->sent[$p->getName()])){
+		$player = $p->getServer()->getPlayer($this->sent[$p->getName()]);
+		unset($this->request[$player->getName()]);
+		unset($this->sent[$p->getName()]);
+	}
+	if(in_array($p->getName(), $this->editor)){
+		unset($this->editor[$p->getName()]);
 		}
 	}
 	
@@ -187,6 +220,7 @@ class Main extends PluginBase implements Listener{
 				$e->setLine(2, $arena_level);
 				$e->setLine(3, "");
 				$p->sendMessage(T::GREEN."Game sign for arena ".T::GOLD.$arena_name.T::GREEN." created!");
+				$p->getLevel()->addSound(new AnvilUseSound(new Vector3($p->x, $p->y, $p->z)));
 				}else{
 				$p->sendMessage(T::RED."There is not any arena with that name!");
 				$e->setLine(0, T::RED."BROKEN");
@@ -211,17 +245,8 @@ class Main extends PluginBase implements Listener{
 				$arena = new Config($this->getDataFolder()."Arenas/".$game.".yml", Config::YAML);
 				    $name = $arena->get("Name");
 					$level = $arena->get("Level");
+					$type = $arena->get("Type");
 					if($this->getPlayers($game) == 0){
-						$this->playing[$p->getName()] = $p->getName();
-						$this->move[$p->getName()] = $p->getName();
-						$p->setGamemode(0);
-						$p->setFlying(false);
-						$blind = Effect::getEffect(15);
-						$blind->setDuration(9999);
-						$blind->setAmplifier(10);
-						$blind->setVisible(false);
-						$p->addEffect($blind);
-						$p->setHealth(20);
 						$this->newTask($game);
 						$pone = $arena->get("PosOne");
 						$x = $pone["x"];
@@ -229,95 +254,21 @@ class Main extends PluginBase implements Listener{
 						$ar = $this->getServer()->getLevelByName($level);
 						$y = $ar->getHighestBlockAt($x, $z);
 						$p->teleport(new Position($x, $y, $z, $ar));
-						$p->getInventory()->clearAll();
-						$armor = $arena->get("Armor");
-						$h = $armor["helmet"];
-						$c = $armor["chest"];
-						$l = $armor["leggings"];
-						$b = $armor["boots"];
-						$p->getInventory()->setHelmet(Item::get($h));
-						$p->getInventory()->setChestPlate(Item::get($c));
-						$p->getInventory()->setLeggings(Item::get($l));
-						$p->getInventory()->setBoots(Item::get($b));
-						$item = $arena->get("Items");
-						$zero = $item["zero"];
-						//slot 0
-						$p->getInventory()->addItem(Item::get($zero["item"], $zero["damage"], $zero["count"]));
-						//slot 1
-						$one = $item["one"];
-						$p->getInventory()->addItem(Item::get($one["item"], $one["damage"], $one["count"]));
-						//slot 2
-						$two = $item["two"];
-						$p->getInventory()->addItem(Item::get($two["item"], $two["damage"], $two["count"]));
-						//slot 3
-						$three = $item["three"];
-						$p->getInventory()->addItem(Item::get($three["item"], $three["damage"], $three["count"]));
-						//slot 4
-						$four = $item["four"];
-						$p->getInventory()->addItem(Item::get($four["item"], $four["damage"], $four["count"]));
-						//slot 5
-						$five = $item["five"];
-						$p->getInventory()->addItem(Item::get($five["item"], $five["damage"], $five["count"]));
-						Server::getInstance()->broadcastMessage(T::GOLD.$p->getName().T::YELLOW." joined to fight at ".T::GREEN.$game);
-						$p->sendMessage(T::GREEN."You joined to {$name} arena. ".T::RED.$this->getPlayers($game)."/2");
-						foreach($this->getPlaying($game) as $jugador){
-							$jugador->sendMessage(T::YELLOW.$p->getName().T::GRAY." joined to game!");
-							}
+					    $this->setKit($p, $game);
+					    $p->getLevel()->addSound(new EndermanTeleportSound(new Vector3($p->x, $p->y, $p->z)));
 						}else
 						if($this->getPlayers($game) == 1){
-						$this->playing[$p->getName()] = $p->getName();
-						$this->move[$p->getName()] = $p->getName();
-						$p->setGamemode(0);
-						$p->setFlying(false);
-						$blind = Effect::getEffect(15);
-						$blind->setDuration(9999);
-						$blind->setAmplifier(10);
-						$blind->setVisible(false);
-						$p->addEffect($blind);
-						$p->setHealth(20);
 						$ptwo = $arena->get("PosTwo");
 						$x = $ptwo["x"];
 						$z = $ptwo["z"];
 						$ar = $this->getServer()->getLevelByName($level);
 						$y = $ar->getHighestBlockAt($x, $z);
 						$p->teleport(new Position($x, $y, $z, $ar));
-						$p->getInventory()->clearAll();
-						$items = $arena->get("Armor");
-						$h = $items["helmet"];
-						$c = $items["chest"];
-						$l = $items["leggings"];
-						$b = $items["boots"];
-						$p->getInventory()->setHelmet(Item::get($h));
-						$p->getInventory()->setChestPlate(Item::get($c));
-						$p->getInventory()->setLeggings(Item::get($l));
-						$p->getInventory()->setBoots(Item::get($b));
-						$item = $arena->get("Items");
-						$zero = $item["zero"];
-						//slot 0
-						$p->getInventory()->addItem(Item::get($zero["item"], $zero["damage"], $zero["count"]));
-						//slot 1
-						$one = $item["one"];
-						$p->getInventory()->addItem(Item::get($one["item"], $one["damage"], $one["count"]));
-						//slot 2
-						$two = $item["two"];
-						$p->getInventory()->addItem(Item::get($two["item"], $two["damage"], $two["count"]));
-						//slot 3
-						$three = $item["three"];
-						$p->getInventory()->addItem(Item::get($three["item"], $three["damage"], $three["count"]));
-						//slot 4
-						$four = $item["four"];
-						$p->getInventory()->addItem(Item::get($four["item"], $four["damage"], $four["count"]));
-						//slot 5
-						$five = $item["five"];
-						$p->getInventory()->addItem(Item::get($five["item"], $five["damage"], $five["count"]));
-						$p->sendMessage(T::GREEN."You joined to {$name} arena. ".T::RED.$this->getPlayers($game)."/2");
-						foreach($this->getPlaying($game) as $jugador){
-							$jugador->sendMessage(T::YELLOW.$p->getName().T::GRAY." joined to game!");
-							}
+					    $this->setKit($p, $game);
+					    $p->getLevel()->addSound(new EndermanTeleportSound(new Vector3($p->x, $p->y, $p->z)));
 					}else if($this->getPlayers($game) >= 2){
-								$p->sendMessage(T::RED."Game started!");
-								}
-					
+					$p->sendMessage(T::RED."Game started!");
+					}
 				}
 			}
 			}
@@ -334,6 +285,84 @@ class Main extends PluginBase implements Listener{
 			}
 			}
 		}
+	}
+	
+	public function setKohi(Player $player){
+	$i = $player->getInventory();
+	$i->setContents([Item::get(Item::DIAMOND_SWORD, 0, 1), Item::get(Item::GOLDEN_CARROT, 0, 64), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1)]);
+	$i->setArmorContents([Item::get(Item::DIAMOND_HELMET, 0, 1), Item::get(Item::DIAMOND_CHESTPLATE, 0, 1), Item::get(Item::DIAMOND_LEGGINGS, 0, 1), Item::get(Item::DIAMOND_BOOTS, 0, 1)]);
+	}
+	
+	public function setKit(Player $player, $game){
+	$arena = new Config($this->getDataFolder()."Arenas/".$game.".yml", Config::YAML);
+	$name = $arena->get("Name");
+	$level = $arena->get("Level");
+	$status = $arena->get("Status");
+	$type = $arena->get("Type");
+	
+	$this->playing[$player->getName()] = $player->getName();
+	$this->move[$player->getName()] = $player->getName();
+	$player->setGamemode(0);
+	$player->setFlying(false);
+	$blind = Effect::getEffect(15);
+	$blind->setDuration(9999);
+	$blind->setAmplifier(10);
+	$blind->setVisible(false);
+	$player->addEffect($blind);
+	$player->setHealth(20);
+	$player->getInventory()->clearAll();
+	if($type !== "kohi"){
+	$armor = $arena->get("Armor");
+	$h = $armor["helmet"];
+	$c = $armor["chest"];
+	$l = $armor["leggings"];
+	$b = $armor["boots"];
+	$player->getInventory()->setHelmet(Item::get($h));
+	$player->getInventory()->setChestPlate(Item::get($c));
+	$player->getInventory()->setLeggings(Item::get($l));
+	$player->getInventory()->setBoots(Item::get($b));
+	$item = $arena->get("Items");
+	
+	$zero = $item["zero"];
+	$player->getInventory()->addItem(Item::get($zero["item"], $zero["damage"], $zero["count"]));
+     
+	$one = $item["one"];
+	$player->getInventory()->addItem(Item::get($one["item"], $one["damage"], $one["count"]));
+     
+	$two = $item["two"];
+	$player->getInventory()->addItem(Item::get($two["item"], $two["damage"], $two["count"]));
+						
+	$three = $item["three"];
+	$player->getInventory()->addItem(Item::get($three["item"], $three["damage"], $three["count"]));
+						
+	$four = $item["four"];
+	$player->getInventory()->addItem(Item::get($four["item"], $four["damage"], $four["count"]));
+						
+	$five = $item["five"];
+	$player->getInventory()->addItem(Item::get($five["item"], $five["damage"], $five["count"]));
+	
+	$six = $item["six"];
+	$player->getInventory()->addItem(Item::get($six["item"], $six["damage"], $six["count"]));
+	
+	$seven = $item["seven"];
+	$player->getInventory()->addItem(Item::get($seven["item"], $seven["damage"], $seven["count"]));
+	
+	$eigh = $item["eigh"];
+	$player->getInventory()->addItem(Item::get($eigh["item"], $eigh["damage"], $eigh["count"]));
+	
+	$nine = $item["nine"];
+	$player->getInventory()->addItem(Item::get($nine["item"], $nine["damage"], $nine["count"]));
+	
+	$ten = $item["ten"];
+	$player->getInventory()->addItem(Item::get($ten["item"], $ten["damage"], $ten["count"]));
+	}else{
+	$this->setKohi($player);
+	}
+	Server::getInstance()->broadcastMessage(T::GOLD.$player->getName().T::YELLOW." joined to fight at ".T::GREEN.$game);
+	$player->sendMessage(T::GREEN."You joined to {$game} arena. ".T::RED.$this->getPlayers($game)."/2");
+	foreach($this->getPlaying($game) as $jugador){
+	$jugador->sendMessage(T::YELLOW.$player->getName().T::GRAY." joined to game!");
+	}
 	}
 	
 	public function onBreak(BlockBreakEvent $e){
@@ -386,6 +415,7 @@ class Main extends PluginBase implements Listener{
 							"Armor" => "no set",
 							"Items" => "no set",
 							"Status" => "not set",
+							"Type" => "onevone",
 							]);
 							$arena->save();
 							$sender->sendMessage(T::GREEN."Arena {$name} created!");
@@ -478,7 +508,32 @@ class Main extends PluginBase implements Listener{
 								$item_five_count = $sender->getInventory()->getItem($five)->getCount();
 								$item_five_damage = $sender->getInventory()->getItem($five)->getDamage();
 								
-							    	$arena->set("Items", array("zero" => ["item" => $item_zero, "damage" => $item_zero_damage, "count" => $item_zero_count], "one" => ["item" => $item_one, "damage" => $item_one_damage, "count" => $item_one_count], "two" => ["item" => $item_two, "damage" => $item_two_damage, "count" => $item_two_count], "three" => ["item" => $item_three, "damage" => $item_three_damage, "count" => $item_three_count], "four" => ["item" => $item_four, "damage" => $item_four_damage, "count" => $item_four_count], "five" => ["item" => $item_five, "damage" => $item_five_damage, "count" => $item_five_count]));
+								$six = $sender->getInventory()->getHotbarSlotIndex(6);
+								$item_six = $sender->getInventory()->getItem($six)->getId();
+								$item_six_count = $sender->getInventory()->getItem($six)->getCount();
+								$item_six_damage = $sender->getInventory()->getItem($six)->getDamage();
+								
+								$seven = $sender->getInventory()->getHotbarSlotIndex(7);
+								$item_seven = $sender->getInventory()->getItem($seven)->getId();
+								$item_seven_count = $sender->getInventory()->getItem($seven)->getCount();
+								$item_seven_damage = $sender->getInventory()->getItem($seven)->getDamage();
+								
+								$eigh = $sender->getInventory()->getHotbarSlotIndex(8);
+								$item_eigh = $sender->getInventory()->getItem($eigh)->getId();
+								$item_eigh_count = $sender->getInventory()->getItem($eigh)->getCount();
+								$item_eigh_damage = $sender->getInventory()->getItem($eigh)->getDamage();
+								
+								$nine = $sender->getInventory()->getHotbarSlotIndex(9);
+								$item_nine = $sender->getInventory()->getItem($nine)->getId();
+								$item_nine_count = $sender->getInventory()->getItem($nine)->getCount();
+								$item_nine_damage = $sender->getInventory()->getItem($nine)->getDamage();
+								
+								$ten = $sender->getInventory()->getHotbarSlotIndex(10);
+								$item_ten = $sender->getInventory()->getItem($ten)->getId();
+								$item_ten_count = $sender->getInventory()->getItem($ten)->getCount();
+								$item_ten_damage = $sender->getInventory()->getItem($ten)->getDamage();
+								
+							    	$arena->set("Items", array("zero" => ["item" => $item_zero, "damage" => $item_zero_damage, "count" => $item_zero_count], "one" => ["item" => $item_one, "damage" => $item_one_damage, "count" => $item_one_count], "two" => ["item" => $item_two, "damage" => $item_two_damage, "count" => $item_two_count], "three" => ["item" => $item_three, "damage" => $item_three_damage, "count" => $item_three_count], "four" => ["item" => $item_four, "damage" => $item_four_damage, "count" => $item_four_count], "five" => ["item" => $item_five, "damage" => $item_five_damage, "count" => $item_five_count], "six" => ["item" => $item_six, "damage" => $item_six_damage, "count" => $item_six_count], "seven" => ["item" => $item_seven, "damage" => $item_seven_damage, "count" => $item_seven_count], "eigh" => ["item" => $item_eigh, "damage" => $item_eigh_damage, "count" => $item_eigh_count], "nine" => ["item" => $item_nine, "damage" => $item_nine_damage, "count" => $item_nine_count], "ten" => ["item" => $item_ten, "damage" => $item_ten_damage, "count" => $item_ten_count]));
 							    	$arena->save();
 							        $arena->set("Status", "waiting");
 							        $arena->save();
@@ -490,8 +545,144 @@ class Main extends PluginBase implements Listener{
 							}else{$sender->sendMessage(T::RED."You need to set a name first!");}
 						}else{$sender->sendMessage(T::RED."You need to be in creator mode!");}
 					}else if($args[0] == "help"){
-						$sender->sendMessage(T::GRAY."-=] ".T::YELLOW."Practice Commands ".T::GRAY."[=-\n".T::GREEN."/practice make ".T::GOLD."Create a new arena!\n".T::GREEN."/arena ".T::GOLD."See arena commands\n".T::YELLOW."Plugin made by: \n".T::AQUA."@BEcraft_MCPE\n".T::WHITE."You".T::RED."Tube".T::YELLOW." BEcraft Gameplay");
-						}
+						$sender->sendMessage(T::GRAY."-=] ".T::YELLOW."Practice Commands ".T::GRAY."[=-");
+						$sender->sendMessage(T::GREEN."/practice make ".T::GRAY."[".T::GOLD."Create a new arena!".T::GRAY."]");
+						$sender->sendMessage(T::GREEN."/arena ".T::GRAY."[".T::GOLD."See arena commands");
+						$sender->sendMessage(T::GREEN."/practice editor ".T::GRAY."[".T::GOLD."Join to editor mode!".T::GRAY."]");
+						$sender->sendMessage(T::GREEN."/practice setitems <arena> ".T::GRAY."[".T::GOLD."Set new items for any arena (you have to be in editor mode!)");
+						$sender->sendMessage(T::GREEN."/practice setarmor <arena> ".T::GOLD."Set new armor to any arena (hou have to be in creator mode!)");
+						$sender->sendMessage(T::GREEN."/practice <onevone | kohi> <arena> ".T::GRAY."[".T::GOLD."Set any arena type (you need to be in creator mode!)");
+						$sender->sendMessage(T::GREEN."/practice done ".T::GRAY."[".T::GOLD."Leave from editor mode!".T::GRAY."]");
+						$sender->sendMessage(T::YELLOW."Plugin made by: \n".T::AQUA."@BEcraft_MCPE\n".T::WHITE."You".T::RED."Tube".T::YELLOW." BEcraft Gameplay");
+						
+						}else if($args[0] == "editor"){
+						if(!in_array($sender->getName(), $this->editor)){
+							$this->editor[$sender->getName()] = $sender->getName();
+							$sender->sendMessage(T::GREEN."You are in editor mode now!");
+							}
+							}
+
+else
+if($args[0] == "onevone"){
+									if(in_array($sender->getName(), $this->editor)){
+										if(isset($args[1])){
+									$game = $args[1];
+									if($this->arenaExists($game)){
+									$arena = new Config($this->getDataFolder()."Arenas/".$game.".yml", Config::YAML);
+									if($config->get("Type") == "kohi"){
+									$arena->set("Type", "onevone");
+									$arena->save();
+									$sender->sendMessage(T::GREEN."Changed type of game to 1vs1 correctly for arena ".T::GOLD.$game);
+									}else{$sender->sendMessage(T::YELLOW."This arena already is 1vs1");}
+										}else{$sender->sendMessage(T::RED."Sorry this game not exists!");}
+										}
+										}else{$sender->sendMessage(T::RED."You need to be in editor mode to use this command");}
+									}
+
+else if($args[0] == "kohi"){
+										if(in_array($sender->getName(), $this->editor)){
+									$game = $args[1];
+									if($this->arenaExists($game)){
+									$arena = new Config($this->getDataFolder()."Arenas/".$game.".yml", Config::YAML);
+									if($arena->get("Type") == "onevone"){
+									$arena->set("Type", "kohi");
+									$arena->save();
+									$sender->sendMessage(T::GREEN."Changed type of game to kohi correctly for arena ".T::GOLD.$game);
+									}else{$sender->sendMessage(T::YELLOW."This arena already is kohi");}
+										}else{$sender->sendMessage(T::RED."Sorry this game not exists!");}
+										}
+									}
+
+else if($args[0] == "setarmor"){
+										if(in_array($sender->getName(), $this->editor)){
+									$game = $args[1];
+									if($this->arenaExists($game)){
+									$arena = new Config($this->getDataFolder()."Arenas/".$game.".yml", Config::YAML);
+									$cap = $sender->getInventory()->getHelmet()->getId();
+									$chest = $sender->getInventory()->getChestPlate()->getId();
+									$leg = $sender->getInventory()->getLeggings()->getId();
+									$boots = $sender->getInventory()->getBoots()->getId();
+									$arena->set("Armor", array("helmet" => $cap, "chest" => $chest, "leggings" => $leg, "boots" => $boots));
+									$arena->save();
+									$sender->sendMessage(T::GREEN."Changed armor correctly for arena ".T::GOLD.$game);
+										}else{$sender->sendMessage(T::RED."Sorry this game not exists!");}
+										}
+									}
+
+else if($args[0] == "setitems"){
+									if(in_array($sender->getName(), $this->editor)){
+									$game = $args[1];
+									if($this->arenaExists($game)){
+									$arena = new Config($this->getDataFolder()."Arenas/".$game.".yml", Config::YAML);
+									$zero = $sender->getInventory()->getHotbarSlotIndex(0);
+								$item_zero = $sender->getInventory()->getItem($zero)->getId();
+								$item_zero_count = $sender->getInventory()->getItem($zero)->getCount();
+								$item_zero_damage = $sender->getInventory()->getItem($zero)->getDamage();
+								
+								$one = $sender->getInventory()->getHotbarSlotIndex(1);
+								$item_one = $sender->getInventory()->getItem($one)->getId();
+								$item_one_count = $sender->getInventory()->getItem($one)->getCount();
+								$item_one_damage = $sender->getInventory()->getItem($one)->getDamage();
+								
+								$two = $sender->getInventory()->getHotbarSlotIndex(2);
+								$item_two = $sender->getInventory()->getItem($two)->getId();
+								$item_two_count = $sender->getInventory()->getItem($two)->getCount();
+								$item_two_damage = $sender->getInventory()->getItem($two)->getDamage();
+								
+								$three = $sender->getInventory()->getHotbarSlotIndex(3);
+								$item_three = $sender->getInventory()->getItem($three)->getId();
+								$item_three_count = $sender->getInventory()->getItem($three)->getCount();
+								$item_three_damage = $sender->getInventory()->getItem($three)->getDamage();
+								
+								$four = $sender->getInventory()->getHotbarSlotIndex(4);
+								$item_four = $sender->getInventory()->getItem($four)->getId();
+								$item_four_count = $sender->getInventory()->getItem($four)->getCount();
+								$item_four_damage = $sender->getInventory()->getItem($four)->getDamage();
+								
+								$five = $sender->getInventory()->getHotbarSlotIndex(5);
+								$item_five = $sender->getInventory()->getItem($five)->getId();
+								$item_five_count = $sender->getInventory()->getItem($five)->getCount();
+								$item_five_damage = $sender->getInventory()->getItem($five)->getDamage();
+								
+								$six = $sender->getInventory()->getHotbarSlotIndex(6);
+								$item_six = $sender->getInventory()->getItem($six)->getId();
+								$item_six_count = $sender->getInventory()->getItem($six)->getCount();
+								$item_six_damage = $sender->getInventory()->getItem($six)->getDamage();
+								
+								$seven = $sender->getInventory()->getHotbarSlotIndex(7);
+								$item_seven = $sender->getInventory()->getItem($seven)->getId();
+								$item_seven_count = $sender->getInventory()->getItem($seven)->getCount();
+								$item_seven_damage = $sender->getInventory()->getItem($seven)->getDamage();
+								
+								$eigh = $sender->getInventory()->getHotbarSlotIndex(8);
+								$item_eigh = $sender->getInventory()->getItem($eigh)->getId();
+								$item_eigh_count = $sender->getInventory()->getItem($eigh)->getCount();
+								$item_eigh_damage = $sender->getInventory()->getItem($eigh)->getDamage();
+								
+								$nine = $sender->getInventory()->getHotbarSlotIndex(9);
+								$item_nine = $sender->getInventory()->getItem($nine)->getId();
+								$item_nine_count = $sender->getInventory()->getItem($nine)->getCount();
+								$item_nine_damage = $sender->getInventory()->getItem($nine)->getDamage();
+								
+								$ten = $sender->getInventory()->getHotbarSlotIndex(10);
+								$item_ten = $sender->getInventory()->getItem($ten)->getId();
+								$item_ten_count = $sender->getInventory()->getItem($ten)->getCount();
+								$item_ten_damage = $sender->getInventory()->getItem($ten)->getDamage();
+								
+							    $arena->set("Items", array("zero" => ["item" => $item_zero, "damage" => $item_zero_damage, "count" => $item_zero_count], "one" => ["item" => $item_one, "damage" => $item_one_damage, "count" => $item_one_count], "two" => ["item" => $item_two, "damage" => $item_two_damage, "count" => $item_two_count], "three" => ["item" => $item_three, "damage" => $item_three_damage, "count" => $item_three_count], "four" => ["item" => $item_four, "damage" => $item_four_damage, "count" => $item_four_count], "five" => ["item" => $item_five, "damage" => $item_five_damage, "count" => $item_five_count], "six" => ["item" => $item_six, "damage" => $item_six_damage, "count" => $item_six_count], "seven" => ["item" => $item_seven, "damage" => $item_seven_damage, "count" => $item_seven_count], "eigh" => ["item" => $item_eigh, "damage" => $item_eigh_damage, "count" => $item_eigh_count], "nine" => ["item" => $item_nine, "damage" => $item_nine_damage, "count" => $item_nine_count], "ten" => ["item" => $item_ten, "damage" => $item_ten_damage, "count" => $item_ten_count]));
+							    $arena->save();
+								$sender->sendMessage(T::GREEN."Changed items correctly for arena ".T::GOLD.$game);
+										}else{$sender->sendMessage(T::RED."Sorry this game not exists!");}
+										}
+										}
+
+else if($args[0] == "done"){
+											if(in_array($sender->getName(), $this->editor)){
+											unset($this->editor[$sender->getName()]);
+											$sender->sendMessage(T::RED."You left from creator mode!");
+											}
+											}
+							
 				}else{$sender->sendMessage(T::RED."use /practice help");}
 			}else{$sender->sendMessage(T::RED."Only for Admins!");}
 		return true;
@@ -507,18 +698,9 @@ class Main extends PluginBase implements Listener{
 					$arena = new Config($this->getDataFolder()."Arenas/".$name.".yml", Config::YAML);
 					$name = $arena->get("Name");
 					$level = $arena->get("Level");
+					$type = $arena->get("Type");
 					$game = $args[1];
 					if($this->getPlayers($game) == 0){
-						$this->playing[$sender->getName()] = $sender->getName();
-						$this->move[$sender->getName()] = $sender->getName();
-						$sender->setGamemode(0);
-						$sender->setFlying(false);
-						$blind = Effect::getEffect(15);
-						$blind->setDuration(9999);
-						$blind->setAmplifier(10);
-						$blind->setVisible(false);
-						$sender->addEffect($blind);
-						$sender->setHealth(20);
 						$this->newTask($game);
 						$pone = $arena->get("PosOne");
 						$x = $pone["x"];
@@ -526,96 +708,21 @@ class Main extends PluginBase implements Listener{
 						$ar = $this->getServer()->getLevelByName($level);
 						$y = $ar->getHighestBlockAt($x, $z);
 						$sender->teleport(new Position($x, $y, $z, $ar));
-						$sender->getInventory()->clearAll();
-						$armor = $arena->get("Armor");
-						$h = $armor["helmet"];
-						$c = $armor["chest"];
-						$l = $armor["leggings"];
-						$b = $armor["boots"];
-						$sender->getInventory()->setHelmet(Item::get($h));
-						$sender->getInventory()->setChestPlate(Item::get($c));
-						$sender->getInventory()->setLeggings(Item::get($l));
-						$sender->getInventory()->setBoots(Item::get($b));
-						$item = $arena->get("Items");
-						$zero = $item["zero"];
-						//slot 0
-						$sender->getInventory()->addItem(Item::get($zero["item"], $zero["damage"], $zero["count"]));
-						//slot 1
-						$one = $item["one"];
-						$sender->getInventory()->addItem(Item::get($one["item"], $one["damage"], $one["count"]));
-						//slot 2
-						$two = $item["two"];
-						$sender->getInventory()->addItem(Item::get($two["item"], $two["damage"], $two["count"]));
-						//slot 3
-						$three = $item["three"];
-						$sender->getInventory()->addItem(Item::get($three["item"], $three["damage"], $three["count"]));
-						//slot 4
-						$four = $item["four"];
-						$sender->getInventory()->addItem(Item::get($four["item"], $four["damage"], $four["count"]));
-						//slot 5
-						$five = $item["five"];
-						$sender->getInventory()->addItem(Item::get($five["item"], $five["damage"], $five["count"]));
-						Server::getInstance()->broadcastMessage(T::GOLD.$sender->getName().T::YELLOW." joined to fight at ".T::GREEN.$name);
-						$sender->sendMessage(T::GREEN."You joined to {$name} arena. ".T::RED.$this->getPlayers($game)."/2");
-						foreach($this->getPlaying($game) as $jugador){
-							$jugador->sendMessage(T::YELLOW.$sender->getName().T::GRAY." joined to game!");
-							}
+						$this->setKit($sender, $game);
 						}else
 						if($this->getPlayers($game) == 1){
-						$this->playing[$sender->getName()] = $sender->getName();
-						$this->move[$sender->getName()] = $sender->getName();
-						$sender->setGamemode(0);
-						$sender->setFlying(false);
-						$blind = Effect::getEffect(15);
-						$blind->setDuration(9999);
-						$blind->setAmplifier(10);
-						$blind->setVisible(false);
-						$sender->addEffect($blind);
-						$sender->setHealth(20);
 						$ptwo = $arena->get("PosTwo");
 						$x = $ptwo["x"];
 						$z = $ptwo["z"];
 						$ar = $this->getServer()->getLevelByName($level);
 						$y = $ar->getHighestBlockAt($x, $z);
 						$sender->teleport(new Position($x, $y, $z, $ar));
-						$sender->getInventory()->clearAll();
-						$items = $arena->get("Armor");
-						$h = $items["helmet"];
-						$c = $items["chest"];
-						$l = $items["leggings"];
-						$b = $items["boots"];
-						$sender->getInventory()->setHelmet(Item::get($h));
-						$sender->getInventory()->setChestPlate(Item::get($c));
-						$sender->getInventory()->setLeggings(Item::get($l));
-						$sender->getInventory()->setBoots(Item::get($b));
-						$item = $arena->get("Items");
-						$zero = $item["zero"];
-						//slot 0
-						$sender->getInventory()->addItem(Item::get($zero["item"], $zero["damage"], $zero["count"]));
-						//slot 1
-						$one = $item["one"];
-						$sender->getInventory()->addItem(Item::get($one["item"], $one["damage"], $one["count"]));
-						//slot 2
-						$two = $item["two"];
-						$sender->getInventory()->addItem(Item::get($two["item"], $two["damage"], $two["count"]));
-						//slot 3
-						$three = $item["three"];
-						$sender->getInventory()->addItem(Item::get($three["item"], $three["damage"], $three["count"]));
-						//slot 4
-						$four = $item["four"];
-						$sender->getInventory()->addItem(Item::get($four["item"], $four["damage"], $four["count"]));
-						//slot 5
-						$five = $item["five"];
-						$sender->getInventory()->addItem(Item::get($five["item"], $five["damage"], $five["count"]));
-						$sender->sendMessage(T::GREEN."You joined to {$name} arena. ".T::RED.$this->getPlayers($game)."/2");
-						foreach($this->getPlaying($game) as $jugador){
-							$jugador->sendMessage(T::YELLOW.$sender->getName().T::GRAY." joined to game!");
-							}
-							}else if($this->getPlayers($game) >= 2){
-								$sender->sendMessage(T::RED."Game started!");
-								}
-					}else{$sender->sendMessage(T::GOLD.$name.T::RED." Doesnt exist...");}
-					}else{
+						$this->setKit($sender, $game);
+						}else if($this->getPlayers($game) >= 2){
+						$sender->sendMessage(T::RED."Game started!");
+						}
+					    }else{$sender->sendMessage(T::GOLD.$name.T::RED." Doesnt exist...");}
+				     	}else{
 						$sender->sendMessage(T::RED."You are already playing!");
 						}
 				}else
@@ -637,7 +744,8 @@ class Main extends PluginBase implements Listener{
 											$sender->sendMessage(T::YELLOW.$name.T::AQUA.T::BOLD." > ".T::RESET.$estado."\n");
 				}
 						}
-					}else if($args[0] == "quit"){
+					}else 
+					if($args[0] == "quit"){
 						if(in_array($sender->getName(), $this->playing)){
 							unset($this->playing[$sender->getName()]);
 							unset($this->move[$sender->getName()]);
@@ -648,8 +756,111 @@ class Main extends PluginBase implements Listener{
 							}else{
 								$sender->sendMessage(T::RED."You are not playing!");
 							}
+						}else 
+						if($args[0] == "duel"){
+							$vs = $args[1];
+							$player = $sender->getServer()->getPlayer($vs);
+							if($player instanceof Player){
+							if($player->getName() !== $sender->getName()){
+							if(!isset($this->request[$player->getName()])){
+							if(!isset($this->request[$sender->getName()])){
+							if(!isset($this->sent[$sender->getName()])){
+							if(!isset($this->sent[$player->getName()])){
+							$this->request[$player->getName()] = $sender->getName();
+							$this->sent[$sender->getName()] = $player->getName();
+							$sender->sendMessage(T::GREEN."You sent a duel request to ".T::RED.$player->getName());
+							$player->sendMessage(T::GREEN.$sender->getName().T::GOLD." Sent you a duel request, type /arena accept ".T::GREEN.$sender->getName().T::GOLD." to accept it!");
+							}else{$sender->sendMessage(T::RED."This player sent a request to other player!");}
+							}else{$sender->sendMessage(T::RED."You already sent a request to other player, if you want cancel it use /arena!");}
+							}else{$sender->sendMessage(T::RED."You have to decline or accept your current request for duel other player!");}
+							}else{$sender->sendMessage(T::RED."This player has a request in process!");}
+							}else{$sender->sendMessage(T::RED."You cant send request to yourselft xD");}
+								}else{$sender->sendMessage(T::RED."Sorry this player is not online!");}
+							}else 
+							if($args[0] == "accept"){
+								if(isset($this->request[$sender->getName()])){
+									if($args[1] == $this->request[$sender->getName()]){
+									$search = $this->request[$sender->getName()];
+									$player = $sender->getServer()->getPlayer($search);
+									if($player instanceof Player){
+									unset($this->request[$sender->getName()]);
+									unset($this->sent[$player->getName()]);
+										$scan = scandir($this->getDataFolder()."Arenas/");
+										foreach($scan as $arenas){
+											if($arenas !== ".." and $arenas !== "."){
+												$name = str_replace(".yml", "", $arenas);
+												if($this->arenaExists($name)){
+												$arena = new Config($this->getDataFolder()."Arenas/".$name.".yml", Config::YAML);
+												$status = $arena->get("Status");
+												$level = $arena->get("Level");
+												if($this->getPlayers($name) == 0 and $status == "waiting" and $player->getLevel() !== $level){
+													/* Add Sender */
+						$this->newTask($name);
+						$pone = $arena->get("PosOne");
+						$x = $pone["x"];
+						$z = $pone["z"];
+						$ar = $this->getServer()->getLevelByName($level);
+						$y = $ar->getHighestBlockAt($x, $z);
+						$sender->teleport(new Position($x, $y, $z, $ar));
+					    $this->setKit($sender, $name);
+						                   /* Add Player */
+						$this->playing[$player->getName()] = $player->getName();
+						$this->move[$player->getName()] = $player->getName();
+						$ptwo = $arena->get("PosTwo");
+						$x = $ptwo["x"];
+						$z = $ptwo["z"];
+						$ar = $this->getServer()->getLevelByName($level);
+						$y = $ar->getHighestBlockAt($x, $z);
+						$player->teleport(new Position($x, $y, $z, $ar));
+						$this->setKit($player, $name);
+						}else{
+						$sender->sendMessage(T::RED."There is not any free arena to fight!");
+						$player->sendMessage(T::RED."There is not any free arena to fight!");
 						}
-			}else{$sender->sendMessage(T::RED."use /arena [join <arena>] [quit] [list]");}
+						}else{
+						$sender->sendMessage(T::RED."There is not any free arena to fight!");
+						$player->sendMessage(T::RED."There is not any free arena to fight!");
+						}
+						}//if arenas
+						}//fore
+						}else{$sender->sendMessage(T::RED."Sorry this player is not online!");}
+						}else{$sender->sendMessage(T::RED."Sorry this player is not in your request list!");}
+						}else{$sender->sendMessage(T::RED."You dont have any duel request!");}
+						}else if($args[0] == "decline"){
+						if(isset($this->request[$sender->getName()])){
+						$p = $this->request[$sender->getName()];
+						if($args[1] == $p){
+						$player = $sender->getServer()->getPlayer($p);
+						unset($this->request[$sender->getName()]);
+						$sender->sendMessage(T::RED."You declined ".T::GREEN.$player->getName().T::RED." request!");
+						unset($this->sent[$player->getName()]);
+						$player->sendMessage(T::GREEN.$sender->getName().T::RED." declined your request!");
+						}else{$sender->sendMessage(T::RED."Sorry this player didnt send you any request!");}
+						}else{$sender->sendMessage(T::RED."You dont have any request!");}
+						}else if($args[0] == "request"){
+						if(isset($this->request[$sender->getName()])){
+						$sender->sendMessage(T::YELLOW."Request: ".T::GREEN.$this->request[$sender->getName()]);
+						}else if(isset($this->sent[$sender->getName()])){
+						$sender->sendMessage(T::YELLOW."Sent: ".$this->sent[$sender->getName()]);
+						}else if(isset($this->request[$sender->getName()]) and isset($this->sent[$sender->getName()])){
+						$sender->sendMessage(T::YELLOW."Request: ".T::GREEN.$this->request[$sender->getName()]);
+						$sender->sendMessage(T::YELLOW."Sent: ".T::GREEN.$this->sent[$sender->getName()]);
+						}
+						}else if($args[0] == "rsent"){
+						if(isset($this->sent[$sender->getName()])){
+						$sent = $this->sent[$sender->getName()];
+						$player = $sender->getServer()->getPlayer($sent);
+						if($player instanceof Player){
+						unset($this->request[$player->getName()]);
+						unset($this->sent[$sender->getName()]);
+						$sender->sendMessage(T::GREEN."You cancelled your duel request!");
+						$player->sendMessage(T::RED.$sender->getName().T::GOLD." cancelled the duel request!");
+						}
+						}else{$sender->sendMessage(T::RED."You didnt send any duel request");}
+						}
+			}else{
+				$player = $sender;
+$sender->sendMessage(T::YELLOW."Commands:".T::GREEN." /arena [join <arena>] [quit] [list] [duel <player>] [accept <player>]");}
 			return true;
 			break;
 	}

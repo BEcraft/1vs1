@@ -68,6 +68,7 @@ if($this->getCount($game) == 2){
 		Server::getInstance()->broadcastMessage(T::GOLD.$player->getName()." won a duel in arena: ".T::YELLOW.$game);
 		unset($this->plugin->playing[$player->getName()]);
 		$player->teleport($this->plugin->getServer()->getDefaultLevel()->getSafeSpawn());
+		$this->plugin->WinTask($player);
 		$this->status = "waiting";
 		$config->set("Status", "waiting");
 		$config->save();
