@@ -11,7 +11,7 @@ use pocketmine\utils\Config;
 
 class GameTask extends PluginTask{
 	
-	public $time = 500;
+	public $time = 15;
 	public $status = "waiting";
 	public $game;
 	public $plugin;
@@ -20,7 +20,7 @@ class GameTask extends PluginTask{
 	parent::__construct($main);
 	$this->plugin = $main;
 	$this->game = $game;
-	$this->time = 500;
+	$this->time = 15;
 	}
 	
 	public function getTime($int) {
@@ -54,13 +54,13 @@ if($this->getCount($game) == 2){
 		    $config->save();
 		    foreach($this->getPlaying($game) as $player){
 			$player->sendPopup(T::YELLOW."Time: ".T::GOLD.$this->getTime($this->time));
-			if($this->time == 499){
+			if($this->time == 14){
 				$player->sendMessage(T::GREEN."Game started, good luck!");
 				$player->removeAllEffects();
 				unset($this->plugin->move[$player->getName()]);
 				}
 			}
-		}else if($this->getCount($game) == 1 and $this->status == "running" and $this->time > 0){
+		}else if($this->getPlaying($game) >= 2 and $this->status == "running" and $this->time > 0){
 		$this->plugin->getServer()->getScheduler()->cancelTask($this->getTaskId());
 		foreach($this->getPlaying($game) as $player){
 		$player->getInventory()->clearAll();
@@ -72,11 +72,13 @@ if($this->getCount($game) == 2){
 		$this->status = "waiting";
 		$config->set("Status", "waiting");
 		$config->save();
-		$this->time = 500;
+		$this->time = 15;
 						}
-						
-					}else if($this->getCount($game) == 2 and $this->time == 0){
-						$this->plugin->getServer()->getScheduler()->cancelTask($this->getTaskId());
+					}else if($this->getCount($game) == 0){
+			$this->plugin->getServer()->getScheduler()->cancelTask($this->getTaskId());
+			}
+	 if($this->getCount($game) >= 2 and $this->status == "running" and $this->time < 1){
+		$this->plugin->getServer()->getScheduler()->cancelTask($this->getTaskId());
 		foreach($this->getPlaying($game) as $player){
 		$player->getInventory()->clearAll();
 		$player->setHealth(20);
@@ -87,11 +89,9 @@ if($this->getCount($game) == 2){
 		$this->status = "waiting";
 		$config->set("Status", "waiting");
 		$config->save();
-		$this->time = 500;
+		$this->time = 15;
 		}
-		}else if($this->getCount($game) == 0){
-			$this->plugin->getServer()->getScheduler()->cancelTask($this->getTaskId());
-			}
+		}
 	}
 	}//public function
 	

@@ -24,6 +24,7 @@ use pocketmine\command\CommandSender;
 use pocketmine\command\Command;
 use pocketmine\item\Item;
 use pocketmine\event\player\PlayerInteractEvent;
+use pocketmine\math\Vector3;
 use pocketmine\Player;
 use pocketmine\entity\Effect;
 use pocketmine\utils\TextFormat as T;
@@ -55,7 +56,7 @@ class Main extends PluginBase implements Listener{
 	/* Who Send The Request */
 	public $sent = array();
 	
-	/* Arena Editor */
+	    /* Arena Editor */
 	public $editor = array();
 	
 	public function onLoad(){
@@ -321,40 +322,10 @@ class Main extends PluginBase implements Listener{
 	$player->getInventory()->setChestPlate(Item::get($c));
 	$player->getInventory()->setLeggings(Item::get($l));
 	$player->getInventory()->setBoots(Item::get($b));
-	$item = $arena->get("Items");
-	
-	$zero = $item["zero"];
-	$player->getInventory()->addItem(Item::get($zero["item"], $zero["damage"], $zero["count"]));
-     
-	$one = $item["one"];
-	$player->getInventory()->addItem(Item::get($one["item"], $one["damage"], $one["count"]));
-     
-	$two = $item["two"];
-	$player->getInventory()->addItem(Item::get($two["item"], $two["damage"], $two["count"]));
-						
-	$three = $item["three"];
-	$player->getInventory()->addItem(Item::get($three["item"], $three["damage"], $three["count"]));
-						
-	$four = $item["four"];
-	$player->getInventory()->addItem(Item::get($four["item"], $four["damage"], $four["count"]));
-						
-	$five = $item["five"];
-	$player->getInventory()->addItem(Item::get($five["item"], $five["damage"], $five["count"]));
-	
-	$six = $item["six"];
-	$player->getInventory()->addItem(Item::get($six["item"], $six["damage"], $six["count"]));
-	
-	$seven = $item["seven"];
-	$player->getInventory()->addItem(Item::get($seven["item"], $seven["damage"], $seven["count"]));
-	
-	$eigh = $item["eigh"];
-	$player->getInventory()->addItem(Item::get($eigh["item"], $eigh["damage"], $eigh["count"]));
-	
-	$nine = $item["nine"];
-	$player->getInventory()->addItem(Item::get($nine["item"], $nine["damage"], $nine["count"]));
-	
-	$ten = $item["ten"];
-	$player->getInventory()->addItem(Item::get($ten["item"], $ten["damage"], $ten["count"]));
+	$in = $arena->get("Items");
+	foreach($in as $slot => $item){
+	$player->getInventory()->setItem($slot, Item::get($item[0], $item[1], $item[2]));
+	}
 	}else{
 	$this->setKohi($player);
 	}
@@ -477,64 +448,12 @@ class Main extends PluginBase implements Listener{
 									$name = $this->arena["Name"];
 									$this->arena["Items"] = "items";
 							    	$arena = new Config($this->getDataFolder()."Arenas/".$name.".yml", Config::YAML);
-							
-							    $zero = $sender->getInventory()->getHotbarSlotIndex(0);
-								$item_zero = $sender->getInventory()->getItem($zero)->getId();
-								$item_zero_count = $sender->getInventory()->getItem($zero)->getCount();
-								$item_zero_damage = $sender->getInventory()->getItem($zero)->getDamage();
-								
-								$one = $sender->getInventory()->getHotbarSlotIndex(1);
-								$item_one = $sender->getInventory()->getItem($one)->getId();
-								$item_one_count = $sender->getInventory()->getItem($one)->getCount();
-								$item_one_damage = $sender->getInventory()->getItem($one)->getDamage();
-								
-								$two = $sender->getInventory()->getHotbarSlotIndex(2);
-								$item_two = $sender->getInventory()->getItem($two)->getId();
-								$item_two_count = $sender->getInventory()->getItem($two)->getCount();
-								$item_two_damage = $sender->getInventory()->getItem($two)->getDamage();
-								
-								$three = $sender->getInventory()->getHotbarSlotIndex(3);
-								$item_three = $sender->getInventory()->getItem($three)->getId();
-								$item_three_count = $sender->getInventory()->getItem($three)->getCount();
-								$item_three_damage = $sender->getInventory()->getItem($three)->getDamage();
-								
-								$four = $sender->getInventory()->getHotbarSlotIndex(4);
-								$item_four = $sender->getInventory()->getItem($four)->getId();
-								$item_four_count = $sender->getInventory()->getItem($four)->getCount();
-								$item_four_damage = $sender->getInventory()->getItem($four)->getDamage();
-								
-								$five = $sender->getInventory()->getHotbarSlotIndex(5);
-								$item_five = $sender->getInventory()->getItem($five)->getId();
-								$item_five_count = $sender->getInventory()->getItem($five)->getCount();
-								$item_five_damage = $sender->getInventory()->getItem($five)->getDamage();
-								
-								$six = $sender->getInventory()->getHotbarSlotIndex(6);
-								$item_six = $sender->getInventory()->getItem($six)->getId();
-								$item_six_count = $sender->getInventory()->getItem($six)->getCount();
-								$item_six_damage = $sender->getInventory()->getItem($six)->getDamage();
-								
-								$seven = $sender->getInventory()->getHotbarSlotIndex(7);
-								$item_seven = $sender->getInventory()->getItem($seven)->getId();
-								$item_seven_count = $sender->getInventory()->getItem($seven)->getCount();
-								$item_seven_damage = $sender->getInventory()->getItem($seven)->getDamage();
-								
-								$eigh = $sender->getInventory()->getHotbarSlotIndex(8);
-								$item_eigh = $sender->getInventory()->getItem($eigh)->getId();
-								$item_eigh_count = $sender->getInventory()->getItem($eigh)->getCount();
-								$item_eigh_damage = $sender->getInventory()->getItem($eigh)->getDamage();
-								
-								$nine = $sender->getInventory()->getHotbarSlotIndex(9);
-								$item_nine = $sender->getInventory()->getItem($nine)->getId();
-								$item_nine_count = $sender->getInventory()->getItem($nine)->getCount();
-								$item_nine_damage = $sender->getInventory()->getItem($nine)->getDamage();
-								
-								$ten = $sender->getInventory()->getHotbarSlotIndex(10);
-								$item_ten = $sender->getInventory()->getItem($ten)->getId();
-								$item_ten_count = $sender->getInventory()->getItem($ten)->getCount();
-								$item_ten_damage = $sender->getInventory()->getItem($ten)->getDamage();
-								
-							    	$arena->set("Items", array("zero" => ["item" => $item_zero, "damage" => $item_zero_damage, "count" => $item_zero_count], "one" => ["item" => $item_one, "damage" => $item_one_damage, "count" => $item_one_count], "two" => ["item" => $item_two, "damage" => $item_two_damage, "count" => $item_two_count], "three" => ["item" => $item_three, "damage" => $item_three_damage, "count" => $item_three_count], "four" => ["item" => $item_four, "damage" => $item_four_damage, "count" => $item_four_count], "five" => ["item" => $item_five, "damage" => $item_five_damage, "count" => $item_five_count], "six" => ["item" => $item_six, "damage" => $item_six_damage, "count" => $item_six_count], "seven" => ["item" => $item_seven, "damage" => $item_seven_damage, "count" => $item_seven_count], "eigh" => ["item" => $item_eigh, "damage" => $item_eigh_damage, "count" => $item_eigh_count], "nine" => ["item" => $item_nine, "damage" => $item_nine_damage, "count" => $item_nine_count], "ten" => ["item" => $item_ten, "damage" => $item_ten_damage, "count" => $item_ten_count]));
-							    	$arena->save();
+							$items = [];
+								foreach($sender->getInventory()->getContents() as $slot => $item){
+								$items[$slot] = [$item->getId(), $item->getDamage(), $item->getCount()];
+								$arena->set("Items", $items);
+							    $arena->save();
+							    }
 							        $arena->set("Status", "waiting");
 							        $arena->save();
 							    	unset($this->arena["Name"]);
@@ -614,63 +533,12 @@ else if($args[0] == "setitems"){
 									$game = $args[1];
 									if($this->arenaExists($game)){
 									$arena = new Config($this->getDataFolder()."Arenas/".$game.".yml", Config::YAML);
-									$zero = $sender->getInventory()->getHotbarSlotIndex(0);
-								$item_zero = $sender->getInventory()->getItem($zero)->getId();
-								$item_zero_count = $sender->getInventory()->getItem($zero)->getCount();
-								$item_zero_damage = $sender->getInventory()->getItem($zero)->getDamage();
-								
-								$one = $sender->getInventory()->getHotbarSlotIndex(1);
-								$item_one = $sender->getInventory()->getItem($one)->getId();
-								$item_one_count = $sender->getInventory()->getItem($one)->getCount();
-								$item_one_damage = $sender->getInventory()->getItem($one)->getDamage();
-								
-								$two = $sender->getInventory()->getHotbarSlotIndex(2);
-								$item_two = $sender->getInventory()->getItem($two)->getId();
-								$item_two_count = $sender->getInventory()->getItem($two)->getCount();
-								$item_two_damage = $sender->getInventory()->getItem($two)->getDamage();
-								
-								$three = $sender->getInventory()->getHotbarSlotIndex(3);
-								$item_three = $sender->getInventory()->getItem($three)->getId();
-								$item_three_count = $sender->getInventory()->getItem($three)->getCount();
-								$item_three_damage = $sender->getInventory()->getItem($three)->getDamage();
-								
-								$four = $sender->getInventory()->getHotbarSlotIndex(4);
-								$item_four = $sender->getInventory()->getItem($four)->getId();
-								$item_four_count = $sender->getInventory()->getItem($four)->getCount();
-								$item_four_damage = $sender->getInventory()->getItem($four)->getDamage();
-								
-								$five = $sender->getInventory()->getHotbarSlotIndex(5);
-								$item_five = $sender->getInventory()->getItem($five)->getId();
-								$item_five_count = $sender->getInventory()->getItem($five)->getCount();
-								$item_five_damage = $sender->getInventory()->getItem($five)->getDamage();
-								
-								$six = $sender->getInventory()->getHotbarSlotIndex(6);
-								$item_six = $sender->getInventory()->getItem($six)->getId();
-								$item_six_count = $sender->getInventory()->getItem($six)->getCount();
-								$item_six_damage = $sender->getInventory()->getItem($six)->getDamage();
-								
-								$seven = $sender->getInventory()->getHotbarSlotIndex(7);
-								$item_seven = $sender->getInventory()->getItem($seven)->getId();
-								$item_seven_count = $sender->getInventory()->getItem($seven)->getCount();
-								$item_seven_damage = $sender->getInventory()->getItem($seven)->getDamage();
-								
-								$eigh = $sender->getInventory()->getHotbarSlotIndex(8);
-								$item_eigh = $sender->getInventory()->getItem($eigh)->getId();
-								$item_eigh_count = $sender->getInventory()->getItem($eigh)->getCount();
-								$item_eigh_damage = $sender->getInventory()->getItem($eigh)->getDamage();
-								
-								$nine = $sender->getInventory()->getHotbarSlotIndex(9);
-								$item_nine = $sender->getInventory()->getItem($nine)->getId();
-								$item_nine_count = $sender->getInventory()->getItem($nine)->getCount();
-								$item_nine_damage = $sender->getInventory()->getItem($nine)->getDamage();
-								
-								$ten = $sender->getInventory()->getHotbarSlotIndex(10);
-								$item_ten = $sender->getInventory()->getItem($ten)->getId();
-								$item_ten_count = $sender->getInventory()->getItem($ten)->getCount();
-								$item_ten_damage = $sender->getInventory()->getItem($ten)->getDamage();
-								
-							    $arena->set("Items", array("zero" => ["item" => $item_zero, "damage" => $item_zero_damage, "count" => $item_zero_count], "one" => ["item" => $item_one, "damage" => $item_one_damage, "count" => $item_one_count], "two" => ["item" => $item_two, "damage" => $item_two_damage, "count" => $item_two_count], "three" => ["item" => $item_three, "damage" => $item_three_damage, "count" => $item_three_count], "four" => ["item" => $item_four, "damage" => $item_four_damage, "count" => $item_four_count], "five" => ["item" => $item_five, "damage" => $item_five_damage, "count" => $item_five_count], "six" => ["item" => $item_six, "damage" => $item_six_damage, "count" => $item_six_count], "seven" => ["item" => $item_seven, "damage" => $item_seven_damage, "count" => $item_seven_count], "eigh" => ["item" => $item_eigh, "damage" => $item_eigh_damage, "count" => $item_eigh_count], "nine" => ["item" => $item_nine, "damage" => $item_nine_damage, "count" => $item_nine_count], "ten" => ["item" => $item_ten, "damage" => $item_ten_damage, "count" => $item_ten_count]));
+								$items = [];
+								foreach($sender->getInventory()->getContents() as $slot => $item){
+								$items[$slot] = [$item->getId(), $item->getDamage(), $item->getCount()];
+								$arena->set("Items", $items);
 							    $arena->save();
+							    }
 								$sender->sendMessage(T::GREEN."Changed items correctly for arena ".T::GOLD.$game);
 										}else{$sender->sendMessage(T::RED."Sorry this game not exists!");}
 										}
@@ -860,7 +728,7 @@ else if($args[0] == "done"){
 						}
 			}else{
 				$player = $sender;
-$sender->sendMessage(T::YELLOW."Commands:".T::GREEN." /arena [join <arena>] [quit] [list] [duel <player>] [accept <player>]");}
+$sender->sendMessage(T::YELLOW."Commands:".T::GREEN." /arena [join <arena>] [quit] [list] [duel <player>] [accept <player>] [decline <player>] [rsent]");}
 			return true;
 			break;
 	}
