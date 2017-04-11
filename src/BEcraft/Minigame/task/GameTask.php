@@ -60,7 +60,7 @@ if($this->getCount($game) == 2){
 				unset($this->plugin->move[$player->getName()]);
 				}
 			}
-		}else if($this->getPlaying($game) >= 2 and $this->status == "running" and $this->time > 0){
+		}else if($this->getPlaying($game) == 1 and $this->status == "running" and $this->time > 0){
 		$this->plugin->getServer()->getScheduler()->cancelTask($this->getTaskId());
 		foreach($this->getPlaying($game) as $player){
 		$player->getInventory()->clearAll();
