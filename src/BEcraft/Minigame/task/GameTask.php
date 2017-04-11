@@ -11,7 +11,7 @@ use pocketmine\utils\Config;
 
 class GameTask extends PluginTask{
 	
-	public $time = 15;
+	public $time = 500;
 	public $status = "waiting";
 	public $game;
 	public $plugin;
@@ -20,7 +20,7 @@ class GameTask extends PluginTask{
 	parent::__construct($main);
 	$this->plugin = $main;
 	$this->game = $game;
-	$this->time = 15;
+	$this->time = 500;
 	}
 	
 	public function getTime($int) {
@@ -54,7 +54,7 @@ if($this->getCount($game) == 2){
 		    $config->save();
 		    foreach($this->getPlaying($game) as $player){
 			$player->sendPopup(T::YELLOW."Time: ".T::GOLD.$this->getTime($this->time));
-			if($this->time == 14){
+			if($this->time == 499){
 				$player->sendMessage(T::GREEN."Game started, good luck!");
 				$player->removeAllEffects();
 				unset($this->plugin->move[$player->getName()]);
@@ -72,7 +72,7 @@ if($this->getCount($game) == 2){
 		$this->status = "waiting";
 		$config->set("Status", "waiting");
 		$config->save();
-		$this->time = 15;
+		$this->time = 500;
 						}
 					}else if($this->getCount($game) == 0){
 			$this->plugin->getServer()->getScheduler()->cancelTask($this->getTaskId());
@@ -89,7 +89,7 @@ if($this->getCount($game) == 2){
 		$this->status = "waiting";
 		$config->set("Status", "waiting");
 		$config->save();
-		$this->time = 15;
+		$this->time = 500;
 		}
 		}
 	}
