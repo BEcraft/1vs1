@@ -10,7 +10,6 @@ use pocketmine\utils\TextFormat as T;
 use pocketmine\utils\Config;
 
 class GameTask extends PluginTask{
-	
 	public $time = 500;
 	public $status = "waiting";
 	public $game;
@@ -24,82 +23,144 @@ class GameTask extends PluginTask{
 	}
 	
 	public function getTime($int) {
-                $m = floor($int / 60);
-                $s = floor($int % 60);
-                return (($m < 10 ? "0" : "") . $m . ":" . ($s < 10 ? "0" : "") . $s);
-            }
-            
-	public function onRun($tick){
+    $m = floor($int / 60);
+    $s = floor($int % 60);
+    return (($m < 10 ? "0" : "") . $m . ":" . ($s < 10 ? "0" : "") . $s);
+    }
+    
+    public function onRun($tick){
 	$game = $this->game;
 	if($this->plugin->arenaExists($game)){
 	$config = new Config($this->plugin->getDataFolder()."Arenas/".$game.".yml", Config::YAML);
 	$name = $config->get("Name");
 	$level = $config->get("Level");
-	if($this->getCount($game) == 1 and $this->status == "waiting"){
-		$config->set("Status", "waiting");
-		$config->save();
-		foreach($this->getPlaying($game) as $player){
-			$player->sendPopup(T::YELLOW."Waiting for players: ".T::GOLD.$this->getCount($game)." | 2");
-			            $blind = Effect::getEffect(15);
-						$blind->setDuration(9999);
-						$blind->setAmplifier(10);
-						$blind->setVisible(false);
-						$player->addEffect($blind);
-					}
-	}else
-if($this->getCount($game) == 2){
-			$this->time--;
-			$this->status = "running";
-			$config->set("Status", "running");
-		    $config->save();
-		    foreach($this->getPlaying($game) as $player){
-			$player->sendPopup(T::YELLOW."Time: ".T::GOLD.$this->getTime($this->time));
-			if($this->time == 499){
-				$player->sendMessage(T::GREEN."Game started, good luck!");
-				$player->removeAllEffects();
-				unset($this->plugin->move[$player->getName()]);
-				}
-			}
-		}else if($this->getPlaying($game) == 1 and $this->status == "running" and $this->time > 0){
-		$this->plugin->getServer()->getScheduler()->cancelTask($this->getTaskId());
-		foreach($this->getPlaying($game) as $player){
-		$player->getInventory()->clearAll();
-		$player->setHealth(20);
-		Server::getInstance()->broadcastMessage(T::GOLD.$player->getName()." won a duel in arena: ".T::YELLOW.$game);
-		unset($this->plugin->playing[$player->getName()]);
-		$player->teleport($this->plugin->getServer()->getDefaultLevel()->getSafeSpawn());
-		$this->plugin->WinTask($player);
-		$this->status = "waiting";
-		$config->set("Status", "waiting");
-		$config->save();
-		$this->time = 500;
-						}
-					}else if($this->getCount($game) == 0){
-			$this->plugin->getServer()->getScheduler()->cancelTask($this->getTaskId());
-			}
-	 if($this->getCount($game) >= 2 and $this->status == "running" and $this->time < 1){
-		$this->plugin->getServer()->getScheduler()->cancelTask($this->getTaskId());
-		foreach($this->getPlaying($game) as $player){
-		$player->getInventory()->clearAll();
-		$player->setHealth(20);
-		unset($this->plugin->playing[$player->getName()]);
-		$player->teleport(Server::getInstance()->getDefaultLevel()->getSafeSpawn());
-		Server::getInstance()->broadcastMessage(T::RED."Nobody won in arena: ".T::YELLOW.$game);
-		$player->sendMessage(T::GRAY."Time is over, good luck at next!");
-		$this->status = "waiting";
-		$config->set("Status", "waiting");
-		$config->save();
-		$this->time = 500;
-		}
-		}
+	/*
+	 * =======================
+	 * WAITING STATUS
+	 *=======================
+	 */
+	if($this->gamesCount($game) == 1 and $this->status == "waiting"){
+	$config->set("Status", "waiting");
+	$config->save();
+	$player = $this->plugin->games[$game][0];
+	$player->sendPopup(T::YELLOW."Waiting for your oponent: ".T::GOLD.$this->gamesCount($game)." | 2");
+    $blind = Effect::getEffect(15);
+	$blind->setDuration(9999);
+	$blind->setAmplifier(10);
+	$blind->setVisible(false);
+	$player->addEffect($blind);
 	}
-	}//public function
+	/*
+	 * =======================
+	 * START GAME
+	 *=======================
+	 */
+    else
+    if($this->gamesCount($game) == 2){
+	$this->time--;
+	$this->status = "running";
+	$config->set("Status", "running");
+	$config->save();
+    $player1 = $this->plugin->games[$game][0];
+    $player2 = $this->plugin->games[$game][1];
+    $player1->sendPopup(T::YELLOW."Time: ".T::GOLD.$this->getTime($this->time).T::GRAY." || ".T::YELLOW."Oponent: ".T::GOLD.$player2->getName());
+    $player2->sendPopup(T::YELLOW."Time: ".T::GOLD.$this->getTime($this->time).T::GRAY." || ".T::YELLOW."Openent: ".T::GOLD.$player1->getName());
+    /*
+	 * =======================
+	 * REMOVE ALL
+	 *=======================
+	 */
+    if($this->time == 499){
+    $player1->sendMessage(T::GREEN."Game started, good luck!");
+	$player1->removeAllEffects();
+	unset($this->plugin->move[$player1->getName()]);
 	
-	public function getPlaying($game){
-		return $this->plugin->getPlaying($game);
-		}
-	
-	public function getCount($game){
-		return $this->plugin->getPlayers($game);
+	$player2->sendMessage(T::GREEN."Game started, good luck!");
+	$player2->removeAllEffects();
+	unset($this->plugin->move[$player2->getName()]);
 	}
-}
+	}
+	/*
+	 * =======================
+	 * WIN
+	 *=======================
+	 */
+    else 
+    if($this->gamesCount($game) == 1 and $this->status == "running" and $this->time > 0){
+	$this->plugin->getServer()->getScheduler()->cancelTask($this->getTaskId());
+	foreach($this->plugin->games[$game] as $player){
+	$player->getInventory()->clearAll();
+	$player->setHealth(20);
+	Server::getInstance()->broadcastMessage(T::GOLD.$player->getName()." won a duel in arena: ".T::YELLOW.$game);
+	unset($this->plugin->playing[$player->getName()]);
+	$this->plugin->deletePlayer($player);
+	$this->plugin->games[$game] = [];
+	$player->teleport($this->plugin->getServer()->getDefaultLevel()->getSafeSpawn());
+	$this->plugin->WinTask($player);
+	$this->status = "waiting";
+	$config->set("Status", "waiting");
+	$config->save();
+	$this->time = 500;
+	}
+	}
+	/*
+	 * =======================
+	 * STOP GAME IF THERE IS NOT PLAYERS
+	 *=======================
+	 */
+    else 
+    if($this->gamesCount($game) == 0){
+	$this->plugin->getServer()->getScheduler()->cancelTask($this->getTaskId());
+	}
+	/*
+	 * =======================
+	 * TIME OVER 
+	 *=======================
+	 */
+    else 
+    if($this->gamesCount($game) == 2 and $this->time < 1 and $this->status == "running"){
+	$this->plugin->getServer()->getScheduler()->cancelTask($this->getTaskId());
+	 /*
+	 * =======================
+	 * GET FIRST PLAYER
+	 *=======================
+	 */
+	$player1 = $this->plugin->games[$game][0];
+	$player1->getInventory()->clearAll();
+	$player1->setHealth(20);
+	unset($this->plugin->playing[$player1->getName()]);
+	$this->plugin->removePlayer($player1);
+	$player1->teleport(Server::getInstance()->getDefaultLevel()->getSafeSpawn());
+	Server::getInstance()->broadcastMessage(T::RED."Nobody won in arena: ".T::YELLOW.$game);
+	$player1->sendMessage(T::GRAY."Time is over, good luck at next!");
+	/*
+	 * =======================
+	 * GET SECOND PLAYER
+	 *=======================
+	 */
+	$player2 = $this->plugin->games[$game][1];
+	$player2->getInventory()->clearAll();
+	$player2->setHealth(20);
+	unset($this->plugin->playing[$player2->getName()]);
+	$this->plugin->removePlayer($player2);
+	$player2->teleport(Server::getInstance()->getDefaultLevel()->getSafeSpawn());
+	$player2->sendMessage(T::GRAY."Time is over, good luck at next!");
+	
+	$this->status = "waiting";
+	$config->set("Status", "waiting");
+	$config->save();
+	$this->time = 500;
+	}
+	}
+	}
+	
+	/*
+	 * =======================
+	 * GET COUNT OF PLAYER IN ARENA
+	 *=======================
+	 */
+	public function gamesCount($game){
+	return count($this->plugin->games[$game]);
+	}
+	
+    }

@@ -20,28 +20,31 @@ class SignTask extends PluginTask{
 	$world = $this->plugin->getServer()->getDefaultLevel();
 	$tiles = $world->getTiles();
 	foreach($tiles as $sign){
-		if($sign instanceof Sign){
-			$text = $sign->getText();
-			$prefix = T::GRAY."[".T::YELLOW."Practice".T::GRAY."]".T::RESET; 
-			if($text[0] == $prefix){
-				$game = $text[1];
-				if($this->plugin->arenaExists($game)){
-					$config = new Config($this->plugin->getDataFolder()."Arenas/".$game.".yml", Config::YAML);
-					$name = $config->get("Name");
-					$level = $config->get("Level");
-					if($this->getCount($game) <= 1){
-					$sign->setText($prefix, $name, T::AQUA.$level, T::YELLOW.$this->getCount($game)."/2");
-					}else if($this->getCount($game) >= 2){
-					$sign->setText($prefix, $name, T::AQUA.$level, T::RED."Running");
-							}
-					}
-				}
-			}
-		}
+	if($sign instanceof Sign){
+    $text = $sign->getText();
+    $prefix = T::GRAY."[".T::YELLOW."Practice".T::GRAY."]".T::RESET; 
+    if($text[0] == $prefix){
+	$game = strtolower($text[1]);
+	if($this->plugin->arenaExists($game)){
+	$config = new Config($this->plugin->getDataFolder()."Arenas/".$game.".yml", Config::YAML);
+	$name = $config->get("Name");
+	$level = $config->get("Level");
+	$colores = array(T::RED, T::GREEN, T::YELLOW, T::GOLD, T::LIGHT_PURPLE);
+	$rand1 = $colores[array_rand($colores)];
+	$rand2 = $colores[array_rand($colores)];
+	if($this->gamesCount($game) <= 1){
+	$sign->setText($prefix, $name, $rand1.$level, $rand2.$this->gamesCount($game)."/2");
+	}else if($this->gamesCount($game) >= 2){
+	$sign->setText($prefix, $name, $rand1.$level, T::RED."Running");
+	}
+	}
+	}
+    }
+	}
 	}
 	
-	public function getCount($game){
-		return $this->plugin->getPlayers($game);
+	public function gamesCount($game){
+	return count($this->plugin->games[$game]);
 	}
 	
 	}
