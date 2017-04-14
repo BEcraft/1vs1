@@ -9,6 +9,10 @@ use pocketmine\math\Vector3;
 use pocketmine\level\particle\Particle;
 use pocketmine\scheduler\PluginTask;
 use pocketmine\level\particle\FlameParticle;
+use pocketmine\level\particle\HeartParticle;
+use pocketmine\level\particle\DustParticle;
+use pocketmine\level\particle\RedstoneParticle;
+use pocketmine\level\particle\PortalParticle;
 use BEcraft\Minigame\Main;
 
 class WinParticle extends PluginTask{
@@ -34,7 +38,9 @@ class WinParticle extends PluginTask{
 	$center = new Vector3($player->getX(), $player->getY()+3, $player->getZ());
 	$radius = 1;
 	$count = 100;
-	$particle = new FlameParticle($center);
+	$particles = array(new FlameParticle($center), new HeartParticle($center), new RedstoneParticle($center), new PortalParticle($center));
+	$rand = $particles[array_rand($particles)];
+	$particle = $rand;
 	for($a = 0; $a < 100; $a++){
 		$pitch = (mt_rand() / mt_getrandmax()-0.5)*M_PI;
 			$yaw = mt_rand() / mt_getrandmax()*2*M_PI;

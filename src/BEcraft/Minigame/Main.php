@@ -74,6 +74,76 @@ class Main extends PluginBase implements Listener{
 	public function createConfig(){
 	@mkdir($this->getDataFolder());
 	@mkdir($this->getDataFolder()."Arenas/");
+	$this->messages = new Config($this->getDataFolder()."Messages.yml", Config::YAML, [
+	"killed_by" => "§6{victim} §7has been killed by §a{killer}",
+	"create_sign" => "§eYou created a game sign for arena §a{arena}!",
+	"broken_sign" => "§cThere is not any arena with that name!",
+	"already_started" => "§cGame already started!",
+	"already_playing" => "§cYou are already playing!",
+	"broadcast_join" => "§6{player} §ejoined to fight at §a{arena}",
+	"joined_to_arena" => "§eYou joined to §a{arena} §earena. §c{players}/2",
+	"joined_new_player" => "§e{player} §7joined to the match!",
+	"creating_new_arena" => "§aStart setting arena name with /practice name <name>",
+	"player_creating_arena" => "§cthere is a player creating an arena!",
+	"need_creator" => "§cYou need to be in creator mode!",
+	"new_arena_name" => "§aArena {arena} created!",
+	"pos1" => "§6Continue with §e/practice pos1",
+	"arena_name_exists" => "§cThere is a game with that name... please enter other name!",
+	"no_numbers" => "§cPlease use letters instance of numers!",
+	"pos1_done" => "§eFirst position set correctly!",
+	"pos1_needed" => "§cYou need to set arena name first!",
+	"pos2" => "§6Continue with §e/practice pos2",
+	"pos2_done" => "§ePositions added correctly!",
+	"pos2_needed" => "§cYou need to set the second position first!",
+	"armor" => "§6Continue with §e/practice armor",
+	"armor_done" => "§eArmor added correctly!",
+	"armor_need" => "§cYou need to set armor first!",
+	"name_missing" => "§cYou need to set a name first!",
+	"items" => "§6Continue with §e/practice items",
+	"arena_done" => "§aGame completed!",
+	"practice_make" => "§a/practice make §7[§6Create a new arena!§7]",
+	"practice_arena" => "§a/arena §7[§6See arena commands§7]",
+	"practice_editor" => "§a/practice editor §7[§6Join to editor mode!§7]",
+	"practice_set_items" => "§a/practice setitems <arena> §7[§6Set new items for any arena (you have to be in editor mode!)§7]",
+	"practice_set_armor" => "§a/practice setarmor <arena> §7[§6Set new armor to any arena (you have to be in creator mode!)§7]",
+	"practice_arenatype" => "§a/practice <onevone | kohi> <arena> §7[§6Set any arena type (you need to be in creator mode!)§7]",
+	"practice_done" => "§a/practice done §7[§6Leave from editor mode!§7]",
+	"enable_editor_mode" => "§aYou are in editor mode now!",
+	"set_onevone" => "§aChanged type of game to 1vs1 correctly for arena §6{arena}",
+	"already_onevone" => "§eThis arena already is 1vs1",
+	"game_no_exists" => "§cSorry this game not exists!",
+	"need_editor" => "§cYou need to be in editor mode to use this command",
+	"set_kohi" => "§aChanged type of game to potpvp correctly for arena {arena}",
+	"already_kohi" => "§eThis arena already is type potpvp",
+	"set_new_armor" => "§aChanged armor correctly for arena {arena}",
+	"set_new_items" => "§aChanged items correctly for arena {arena}",
+	"leave_editor" => "§cYou left from creator mode!",
+	"you_are_no_playing" => "§cYou are not playing!",
+	"you_left_from_game" => "§eYou left from arena!",
+	"sent_request" => "§5You sent a duel request to §c{player}",
+	"new_request" => "§a{sender} §6sent you a duel request, type /arena accept §a{sender} to accept it!",
+	"requested" => "§cThis player sent a request to other player!",
+	"already_sent_request" => "§cYou already sent a request to other player, if you want cancel it use /arena!",
+	"cannot_duel" => "§cYou have to decline or accept your current request for duel other player!",
+	"duel_process" => "§cThis player has a request in process!",
+	"no_duel_youselft" => "§cYou cant send request to yourselft xD",
+	"player_offline" => "§cSorry this player is not online!",
+	"no_free_arenas" => "§cThere is not any free arena to fight!",
+	"not_request" => "§cSorry this player is not in your request list!",
+	"none_request" => "§cYou dont have any duel request!",
+	"decline" => "§eYou declined §a{player} §erequest!",
+	"declined" => "§a{sender} §cdeclined your duel request!",
+	"no_request_sent" => "§cSorry this player didnt send you any request!",
+	"cancelled_request" => "§aYou cancelled your duel request!",
+	"cancel" => "§c{sender} §6cancelled the duel request!",
+	"no_duel_request_sent" => "§cYou didnt send any duel request",
+	"waiting_popup" => "§eWaiting for your oponent: §6{players} | 2",
+	"game_started" => "§aGame started, good luck!",
+	"win_message" => "§6{player} §ewon a duel in arena: §a{arena}",
+	"time_over" => "§7Time is over, good luck at next!",
+	"no_win" => "§cNobody won in arena: §e{arena}",
+	]);
+	$this->messages->save();
 	}
 	
 	/*
@@ -141,13 +211,14 @@ class Main extends PluginBase implements Listener{
 	if($files !== ".." and $files !== "."){
 	$name = str_replace(".yml", "", $files);
 	$arena = new Config($this->getDataFolder()."Arenas/".$name.".yml", Config::YAML);
-	if(!empty($arena->get("Level"))){
+	if(empty($arena->get("Level"))) return;
+	if(!$this->getServer()->getLevelByName($arena->get("Level")) instanceof Level) return;
 	$level = $arena->get("Level");
+    $world = $this->getServer()->getLevelByName($level);
 	$this->getServer()->loadLevel($level);
-	$level->setTime(0);
-	$level->stopTime();
+	$world->setTime(0);
+	$world->stopTime();
 	$this->getLogger()->notice(T::GOLD."\nLoading arenas: \n".T::GREEN.$level);
-	}
 	}
 	}
 	}
@@ -265,7 +336,9 @@ class Main extends PluginBase implements Listener{
 	if(in_array($killer->getName(), $this->playing)){
 	$e->setDeathMessage("");
 	$e->setDrops([]);
-	Server::getInstance()->broadcastMessage(T::GOLD.$victim->getName().T::GRAY." has been killed by ".T::GREEN.$killer->getName());
+	$message = $this->messages->get("killed_by");
+	$message = str_replace(["{victim}", "{killer}"], [$victim->getName(), $killer->getName()], $message);
+	Server::getInstance()->broadcastMessage($message);
 	$victim->teleport(Server::getInstance()->getDefaultLevel()->getSafeSpawn());
 	unset($this->playing[$victim->getName()]);
 	$this->deletePlayer($victim);
@@ -319,10 +392,12 @@ class Main extends PluginBase implements Listener{
 	$e->setLine(1, $arena_name);
 	$e->setLine(2, $arena_level);
 	$e->setLine(3, "");
-	$p->sendMessage(T::GREEN."Game sign for arena ".T::GOLD.$arena_name.T::GREEN." created!");
+	$message = $this->messages->get("create_sign");
+	$message = str_replace("{arena}", $arena_name, $message);
+	$p->sendMessage($message);
 	$p->getLevel()->addSound(new AnvilUseSound(new Vector3($p->x, $p->y, $p->z)));
 	}else{
-	$p->sendMessage(T::RED."There is not any arena with that name!");
+	$p->sendMessage($this->messages->get("broken_sign"));
 	$e->setLine(0, T::RED."BROKEN");
 	$e->setLine(1, T::RED."BROKEN");
 	$e->setLine(2, T::RED."BROKEN");
@@ -375,9 +450,9 @@ class Main extends PluginBase implements Listener{
 	$p->getLevel()->addSound(new EndermanTeleportSound(new Vector3($p->x, $p->y, $p->z)));
 	}else
     if($this->gamesCount($game) == 2){
-	$p->sendMessage(T::RED."Game already started!");
+	$p->sendMessage($this->messages->get("already_started"));
 	}
-	}else{$p->sendMessage(T::RED."You are already playing!");}
+	}else{$p->sendMessage($this->messages->get("already_playing"));}
 	}
 	}
 	}
@@ -391,7 +466,7 @@ class Main extends PluginBase implements Listener{
 	public function LevelChange(EntityLevelChangeEvent $e){
 	$p = $e->getEntity();
 	if($p instanceof Player){
-	if(in_array($p->getName(), $this->move)){
+	if((in_array($p->getName(), $this->move)) || (in_array($p->getName(), $this->playing))){
 	if($p->getLevel() !== $this->getServer()->getDefaultLevel()){
 	unset($this->move[$p->getName()]);
 	unset($this->playing[$p->getName()]);
@@ -407,7 +482,7 @@ class Main extends PluginBase implements Listener{
 	 * SET POTPVP KIT TO PLAYER
 	 *=======================
 	 */
-	public function setKohi(Player $player){
+	public function set_kohi(Player $player){
 	$i = $player->getInventory();
 	$i->setContents([Item::get(Item::DIAMOND_SWORD, 0, 1), Item::get(Item::GOLDEN_CARROT, 0, 64), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1), Item::get(438, 22, 1)]);
 	$i->setArmorContents([Item::get(Item::DIAMOND_HELMET, 0, 1), Item::get(Item::DIAMOND_CHESTPLATE, 0, 1), Item::get(Item::DIAMOND_LEGGINGS, 0, 1), Item::get(Item::DIAMOND_BOOTS, 0, 1)]);
@@ -446,16 +521,23 @@ class Main extends PluginBase implements Listener{
 	$player->getInventory()->setLeggings(Item::get($l));
 	$player->getInventory()->setBoots(Item::get($b));
 	$in = $arena->get("Items");
+	if(empty($in)) return;
 	foreach($in as $slot => $item){
 	$player->getInventory()->setItem($slot, Item::get($item[0], $item[1], $item[2]));
 	}
 	}else{
-	$this->setKohi($player);
+	$this->set_kohi($player);
 	}
-	Server::getInstance()->broadcastMessage(T::GOLD.$player->getName().T::YELLOW." joined to fight at ".T::GREEN.$game);
-	$player->sendMessage(T::GREEN."You joined to {$game} arena. ".T::RED.$this->gamesCount($game)."/2");
+	$broad = $this->messages->get("broadcast_join");
+	$broad = str_replace(["{player}", "{arena}"], [$player->getName(), $game], $broad);
+	Server::getInstance()->broadcastMessage($broad);
+	$message = $this->messages->get("joined_to_arena");
+	$message = str_replace(["{arena}", "{players}"], [$game, $this->gamesCount($game)], $message);
+	$player->sendMessage($message);
 	foreach($this->games[$game] as $jugador){
-	$jugador->sendMessage(T::YELLOW.$player->getName().T::GRAY." joined to game!");
+	$new = $this->messages->get("joined_new_player");
+	$new = str_replace("{player}", $player->getName(), $new);
+	$jugador->sendMessage($new);
 	}
 	}
 	
@@ -517,9 +599,9 @@ class Main extends PluginBase implements Listener{
 	if(!in_array($sender->getName(), $this->creator)){
 	if(count($this->creator) == 0){
 	$this->creator[$sender->getName()] = $sender->getName();
-	$sender->sendMessage(T::GREEN."Start setting arena name with /practice name <name>");
-	}else{$sender->sendMessage(T::RED."there is a player creating an arena!");}
-	}else{$sender->sendMessage(T::RED."You are in creator mode!");}
+	$sender->sendMessage($this->messages->get("creating_new_arena"));
+	}else{$sender->sendMessage($this->messages->get("player_creating_arena"));}
+	}else{$sender->sendMessage($this->messages->get("need_creator"));}
 	}else if($args[0] == "name"){
 	if(in_array($sender->getName(), $this->creator)){
 	$name = strtolower($args[1]);
@@ -543,11 +625,13 @@ class Main extends PluginBase implements Listener{
 	 ]);
 	$arena->save();
 	$this->addArena($name);
-	$sender->sendMessage(T::GREEN."Arena {$name} created!");
-	$sender->sendMessage(T::GOLD."Continue with ".T::YELLOW."/practice pos1");
-	}else{$sender->sendMessage(T::RED."There is a game with that name... please enter other name!");}
-	}else{$sender->sendMessage(T::RED."Please not numbers!");}
-	}else{$sender->sendMessage(T::RED."You need to be in creator mode!");}
+	$message = $this->messages->get("new_arena_name");
+	$message = str_replace("{arena}", $name, $message);
+	$sender->sendMessage($message);
+	$sender->sendMessage($this->messages->get("pos1"));
+	}else{$sender->sendMessage($this->messages->get("arena_name_exists"));}
+	}else{$sender->sendMessage($this->messages->get("no_numbers"));}
+	}else{$sender->sendMessage($this->messages->get("need_creator"));}
 	}else if($args[0] == "pos1"){
 	if(in_array($sender->getName(), $this->creator)){
 	if(isset($this->arena["Name"])){
@@ -561,10 +645,10 @@ class Main extends PluginBase implements Listener{
 	$arena = new Config($this->getDataFolder()."Arenas/".$name.".yml", Config::YAML);
 	$arena->set("PosOne", array($sender->getFloorX(), $sender->getFloorY(), $sender->getFloorZ()));
 	$arena->save();
-	$sender->sendMessage(T::YELLOW."First position set correctly!");
-	$sender->sendMessage(T::GOLD."Continue with ".T::YELLOW."/practice pos2");
-	}else{$sender->sendMessage(T::RED."You need to set arena name first!");}
-	}else{$sender->sendMessage(T::RED."You are in creator mode!");}
+	$sender->sendMessage($this->messages->get("pos1_done"));
+	$sender->sendMessage($this->messages->get("pos2"));
+	}else{$sender->sendMessage($this->messages->get("pos1_needed"));}
+	}else{$sender->sendMessage($this->messages->get("need_creator"));}
 	}else if($args[0] == "pos2"){
 	if(in_array($sender->getName(), $this->creator)){
 	if(isset($this->arena["Name"])){
@@ -580,11 +664,11 @@ class Main extends PluginBase implements Listener{
 	$arena = new Config($this->getDataFolder()."Arenas/".$n.".yml", Config::YAML);
 	$arena->set("PosTwo", array($sender->getFloorX(), $sender->getFloorY(), $sender->getFloorZ()));
 	$arena->save();
-	$sender->sendMessage(T::YELLOW."Positions added correctly!");
-	$sender->sendMessage(T::GOLD."Continue with ".T::YELLOW."/practice armor");
-	}else{$sender->sendMessage(T::RED."You need to set first position!");}
-	}else{$sender->sendMessage(T::RED."You need to set a name first!");}
-	}else{$sender->sendMessage(T::RED."You are in creator mode!");}
+	$sender->sendMessage($this->messages->get("pos2_done"));
+	$sender->sendMessage($this->messages->get("armor"));
+	}else{$sender->sendMessage($this->messages->get("pos1_needed"));}
+	}else{$sender->sendMessage($this->messages->get("name_missing"));}
+	}else{$sender->sendMessage($this->messages->get("need_creator"));}
 	}else if($args[0] == "armor"){
 	if(in_array($sender->getName(), $this->creator)){
 	if(isset($this->arena["Name"])){
@@ -604,11 +688,11 @@ class Main extends PluginBase implements Listener{
 	$boots = $sender->getInventory()->getBoots()->getId();
 	$arena->set("Armor", array("helmet" => $cap, "chest" => $chest, "leggings" => $leg, "boots" => $boots));
 	$arena->save();
-	$sender->sendMessage(T::YELLOW."Armor added correctly!");
-	$sender->sendMessage(T::GOLD."Continue with ".T::YELLOW."/practice items");
-	}else{$sender->sendMessage(T::RED."You need to set second position first!");}
-	}else{$sender->sendMessage(T::RED."You need to set a name first!");}
-	}else{$sender->sendMessage(T::RED."You are in creator mode!");}
+	$sender->sendMessage($this->messages->get("armor_done"));
+	$sender->sendMessage($this->messages->get("items"));
+	}else{$sender->sendMessage($this->messages->get("pos2_needed"));}
+	}else{$sender->sendMessage($this->messages->get("name_missing"));}
+	}else{$sender->sendMessage($this->messages->get("need_creator"));}
 	}else if($args[0] == "items"){
 	if(in_array($sender->getName(), $this->creator)){
 	if(isset($this->arena["Name"])){
@@ -638,10 +722,10 @@ class Main extends PluginBase implements Listener{
 	 * GAME COMPLETED
 	 *=======================
 	 */
-	$sender->sendMessage(T::GREEN."Game created completed!");
-	}else{$sender->sendMessage(RED."You need to set armor first!");}
-	}else{$sender->sendMessage(T::RED."You need to set a name first!");}
-	}else{$sender->sendMessage(T::RED."You need to be in creator mode!");}
+	$sender->sendMessage($this->messages->get("arena_done"));
+	}else{$sender->sendMessage($this->messages->get("armor_need"));}
+	}else{$sender->sendMessage($this->messages->get("name_missing"));}
+	}else{$sender->sendMessage($this->messages->get("need_creator"));}
     }
     /*
 	 * =======================
@@ -651,13 +735,13 @@ class Main extends PluginBase implements Listener{
     else 
     if($args[0] == "help"){
 	$sender->sendMessage(T::GRAY."-=] ".T::YELLOW."Practice Commands ".T::GRAY."[=-");
-	$sender->sendMessage(T::GREEN."/practice make ".T::GRAY."[".T::GOLD."Create a new arena!".T::GRAY."]");
-	$sender->sendMessage(T::GREEN."/arena ".T::GRAY."[".T::GOLD."See arena commands");
-	$sender->sendMessage(T::GREEN."/practice editor ".T::GRAY."[".T::GOLD."Join to editor mode!".T::GRAY."]");
-	$sender->sendMessage(T::GREEN."/practice setitems <arena> ".T::GRAY."[".T::GOLD."Set new items for any arena (you have to be in editor mode!)");
-	$sender->sendMessage(T::GREEN."/practice setarmor <arena> ".T::GOLD."Set new armor to any arena (hou have to be in creator mode!)");
-	$sender->sendMessage(T::GREEN."/practice <onevone | kohi> <arena> ".T::GRAY."[".T::GOLD."Set any arena type (you need to be in creator mode!)");
-	$sender->sendMessage(T::GREEN."/practice done ".T::GRAY."[".T::GOLD."Leave from editor mode!".T::GRAY."]");
+	$sender->sendMessage($this->messages->get("practice_make"));
+	$sender->sendMessage($this->messages->get("practice_arena"));
+	$sender->sendMessage($this->messages->get("practice_editor"));
+	$sender->sendMessage($this->messages->get("practice_set_items"));
+	$sender->sendMessage($this->messages->get("practice_set_armor"));
+	$sender->sendMessage($this->messages->get("practice_arenatype"));
+	$sender->sendMessage($this->messages->get("practice_done"));
 	$sender->sendMessage(T::YELLOW."Plugin made by: \n".T::AQUA."@BEcraft_MCPE\n".T::WHITE."You".T::RED."Tube".T::YELLOW." BEcraft Gameplay");
 	}
 	/*
@@ -669,7 +753,7 @@ class Main extends PluginBase implements Listener{
     if($args[0] == "editor"){
 	if(!in_array($sender->getName(), $this->editor)){
 	$this->editor[$sender->getName()] = $sender->getName();
-	$sender->sendMessage(T::GREEN."You are in editor mode now!");
+	$sender->sendMessage($this->messages->get("enable_editor_mode"));
 	}
 	}
    /*
@@ -687,11 +771,13 @@ class Main extends PluginBase implements Listener{
    if($config->get("Type") == "kohi"){
    $arena->set("Type", "onevone");
    $arena->save();
-   $sender->sendMessage(T::GREEN."Changed type of game to 1vs1 correctly for arena ".T::GOLD.$game);
-   }else{$sender->sendMessage(T::YELLOW."This arena already is 1vs1");}
-   }else{$sender->sendMessage(T::RED."Sorry this game not exists!");}
+   $message = $this->messages->get("set_onevone");
+   $message = str_replace("{arena}", $game, $message);
+   $sender->sendMessage($message);
+   }else{$sender->sendMessage($this->messages->get("already_onevone"));}
+   }else{$sender->sendMessage($this->messages->get("game_no_exists"));}
    }
-   }else{$sender->sendMessage(T::RED."You need to be in editor mode to use this command");}
+   }else{$sender->sendMessage($this->messages->get("need_editor"));}
    }
    /*
 	 * =======================
@@ -707,10 +793,12 @@ class Main extends PluginBase implements Listener{
 	if($arena->get("Type") == "onevone"){
 	$arena->set("Type", "kohi");
 	$arena->save();
-	$sender->sendMessage(T::GREEN."Changed type of game to kohi correctly for arena ".T::GOLD.$game);
-	}else{$sender->sendMessage(T::YELLOW."This arena already is kohi");}
-	}else{$sender->sendMessage(T::RED."Sorry this game not exists!");}
-	}
+	$message = $this->messages->get("set_kohi");
+	$message = str_replace("{arena}", $game, $message);
+	$sender->sendMessage($message);
+	}else{$sender->sendMessage($this->messages->get("already_kohi"));}
+	}else{$sender->sendMessage($this->messages->get("game_no_exists"));}
+	}else{$sender->sendMessage($this->messages->get("need_editor"));}
 	}
 	/*
 	 * =======================
@@ -729,9 +817,11 @@ class Main extends PluginBase implements Listener{
 	$boots = $sender->getInventory()->getBoots()->getId();
 	$arena->set("Armor", array("helmet" => $cap, "chest" => $chest, "leggings" => $leg, "boots" => $boots));
 	$arena->save();
-	$sender->sendMessage(T::GREEN."Changed armor correctly for arena ".T::GOLD.$game);
-	}else{$sender->sendMessage(T::RED."Sorry this game not exists!");}
-	}
+	$message = $this->messages->get("set_new_armor");
+	$message = str_replace("{arena}", $game, $message);
+	$sender->sendMessage($message);
+	}else{$sender->sendMessage($this->messages->get("game_no_exists"));}
+	}else{$sender->sendMessage($this->messages->get("need_editor"));}
 	}
 	/*
 	 * =======================
@@ -750,9 +840,11 @@ class Main extends PluginBase implements Listener{
 	$arena->set("Items", $items);
     $arena->save();
     }
-	$sender->sendMessage(T::GREEN."Changed items correctly for arena ".T::GOLD.$game);
-	}else{$sender->sendMessage(T::RED."Sorry this game not exists!");}
-	}
+    $message = $this->messages->get("set_new_items");
+    $message = str_replace("{arena}", $game, $message);
+	$sender->sendMessage($message);
+	}else{$sender->sendMessage($this->messages->get("game_no_exists"));}
+	}else{$sender->sendMessage($this->messages->get("need_editor"));}
 	}
 	/*
 	 * =======================
@@ -763,8 +855,8 @@ class Main extends PluginBase implements Listener{
     if($args[0] == "done"){
 	if(in_array($sender->getName(), $this->editor)){
 	unset($this->editor[$sender->getName()]);
-	$sender->sendMessage(T::RED."You left from creator mode!");
-	}
+	$sender->sendMessage($this->messages->get("leave_editor"));
+	}else{$sender->sendMessage($this->messages->get("need_editor"));}
 	}
 	}else{$sender->sendMessage(T::RED."use /practice help");}
 	}else{$sender->sendMessage(T::RED."Only for Admins!");}
@@ -812,11 +904,11 @@ class Main extends PluginBase implements Listener{
 	$this->addPlayer($sender, $game);
 	$this->setKit($sender, $game);
 	}else if($this->getPlayers($game) == 2){
-	$sender->sendMessage(T::RED."Game started!");
+	$sender->sendMessage($this->messages->get("already_started"));
 	}
-    }else{$sender->sendMessage(T::GOLD.$name.T::RED." Doesnt exist...");}
+    }else{$sender->sendMessage($this->messages->get("game_no_exists"));}
 	}else{
-	$sender->sendMessage(T::RED."You are already playing!");
+	$sender->sendMessage($this->messages->get("already_playing"));
 	}
 	}
 	/*
@@ -859,9 +951,9 @@ class Main extends PluginBase implements Listener{
 	$sender->setHealth(20);
 	$sender->getInventory()->clearAll();
 	$sender->teleport(Server::getInstance()->getDefaultLevel()->getSafeSpawn());
-	$sender->sendMessage(T::YELLOW."You left from arena!");
+	$sender->sendMessage($this->messages->get,("you_left_from_game"));
 	}else{
-	$sender->sendMessage(T::RED."You are not playing!");
+	$sender->sendMessage($this->messages->get("you_are_no_playing"));
 	}
 	}
 	/*
@@ -871,6 +963,8 @@ class Main extends PluginBase implements Listener{
 	 */
     else 
 	if($args[0] == "duel"){
+	if($sender->getLevel() !== Server::getInstance()->getDefaultLevel()) return;
+	if(in_array($sender->getName(), $this->playing)) return;
 	$vs = $args[1];
 	$player = $sender->getServer()->getPlayer($vs);
 	if($player instanceof Player){
@@ -881,14 +975,18 @@ class Main extends PluginBase implements Listener{
 	if(!isset($this->sent[$player->getName()])){
 	$this->request[$player->getName()] = $sender->getName();
 	$this->sent[$sender->getName()] = $player->getName();
-	$sender->sendMessage(T::GREEN."You sent a duel request to ".T::RED.$player->getName());
-	$player->sendMessage(T::GREEN.$sender->getName().T::GOLD." Sent you a duel request, type /arena accept ".T::GREEN.$sender->getName().T::GOLD." to accept it!");
-	}else{$sender->sendMessage(T::RED."This player sent a request to other player!");}
-	}else{$sender->sendMessage(T::RED."You already sent a request to other player, if you want cancel it use /arena!");}
-	}else{$sender->sendMessage(T::RED."You have to decline or accept your current request for duel other player!");}
-	}else{$sender->sendMessage(T::RED."This player has a request in process!");}
-	}else{$sender->sendMessage(T::RED."You cant send request to yourselft xD");}
-	}else{$sender->sendMessage(T::RED."Sorry this player is not online!");}
+	$sent = $this->messages->get("sent_request");
+	$sent = str_replace("{player}", $player->getName(), $sent);
+	$sender->sendMessage($sent);
+	$request = $this->messages->get("new_request");
+	$request = str_replace("{sender}", $sender->getName(), $request);
+	$player->sendMessage($request);
+	}else{$sender->sendMessage($this->messages->get("requested"));}
+	}else{$sender->sendMessage($this->messages->get("already_sent_request"));}
+	}else{$sender->sendMessage($this->messages->get("cannot_duel"));}
+	}else{$sender->sendMessage($this->messages->get("duel_process"));}
+	}else{$sender->sendMessage($this->messages->get("no_duel_youselft"));}
+	}else{$sender->sendMessage($this->messages->get("player_offline"));}
 	}
 	/*
 	 * =======================
@@ -897,6 +995,8 @@ class Main extends PluginBase implements Listener{
 	 */
     else 
 	if($args[0] == "accept"){
+	if($sender->getLevel() !== Server::getInstance()->getDefaultLevel()) return;
+	if(in_array($sender->getName(), $this->playing)) return;
 	if(isset($this->request[$sender->getName()])){
 	if($args[1] == $this->request[$sender->getName()]){
 	$search = $this->request[$sender->getName()];
@@ -943,18 +1043,18 @@ class Main extends PluginBase implements Listener{
 	$this->addPlayer($player, $name);
 	$this->setKit($player, $name);
 	}else{
-	$sender->sendMessage(T::RED."There is not any free arena to fight!");
-	$player->sendMessage(T::RED."There is not any free arena to fight!");
+	$sender->sendMessage($this->messages->get("no_free_arenas"));
+	$player->sendMessage($this->messages->get("no_free_arenas"));
 	}
 	}else{
-	$sender->sendMessage(T::RED."There is not any free arena to fight!");
-	$player->sendMessage(T::RED."There is not any free arena to fight!");
+	$sender->sendMessage($this->messages->get("no_free_arenas"));
+	$player->sendMessage($this->messages->get("no_free_arenas"));
 	}
 	}
 	}
-	}else{$sender->sendMessage(T::RED."Sorry this player is not online!");}
-	}else{$sender->sendMessage(T::RED."Sorry this player is not in your request list!");}
-	}else{$sender->sendMessage(T::RED."You dont have any duel request!");}
+	}else{$sender->sendMessage($this->messages->get("player_offline"));}
+	}else{$sender->sendMessage($this->messages->get("not_request"));}
+	}else{$sender->sendMessage($this->messages->get("none_request"));}
 	}
 	/*
 	 * =======================
@@ -968,11 +1068,15 @@ class Main extends PluginBase implements Listener{
 	if($args[1] == $p){
 	$player = $sender->getServer()->getPlayer($p);
 	unset($this->request[$sender->getName()]);
-	$sender->sendMessage(T::RED."You declined ".T::GREEN.$player->getName().T::RED." request!");
+	$decline = $this->messages->get("decline");
+	$decline = str_replace("{player}", $player->getName(), $decline);
+	$sender->sendMessage($decline);
 	unset($this->sent[$player->getName()]);
-	$player->sendMessage(T::GREEN.$sender->getName().T::RED." declined your request!");
-	}else{$sender->sendMessage(T::RED."Sorry this player didnt send you any request!");}
-	}else{$sender->sendMessage(T::RED."You dont have any request!");}
+	$declined = $this->messages->get("declined");
+	$declined = str_replace("{sender}", $sender->getName(), $declined);
+	$player->sendMessage($declined);
+	}else{$sender->sendMessage($this->messages->get("no_request_sent"));}
+	}else{$sender->sendMessage($this->messages->get("none_request"));}
 	}
 	/*
 	 * =======================
@@ -1002,10 +1106,12 @@ class Main extends PluginBase implements Listener{
 	if($player instanceof Player){
 	unset($this->request[$player->getName()]);
 	unset($this->sent[$sender->getName()]);
-	$sender->sendMessage(T::GREEN."You cancelled your duel request!");
-	$player->sendMessage(T::RED.$sender->getName().T::GOLD." cancelled the duel request!");
+	$sender->sendMessage($this->messages->get("cancelled_request"));
+	$cancel = $this->messages->get("cancel");
+	$cancel = str_replace("{sender}", $sender->getName(), $cancel);
+	$player->sendMessage($cancel);
 	}
-	}else{$sender->sendMessage(T::RED."You didnt send any duel request");}
+	}else{$sender->sendMessage($this->messages->get("no_duel_request_sent"));}
 	}
     }else{
     $sender->sendMessage(T::YELLOW."Commands:".T::GREEN." /arena [join <arena>] [quit] [list] [duel <player>] [accept <player>] [decline <player>] [rsent]");}

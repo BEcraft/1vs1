@@ -29,6 +29,7 @@ class SignTask extends PluginTask{
 	$config = new Config($this->plugin->getDataFolder()."Arenas/".$game.".yml", Config::YAML);
 	$name = $config->get("Name");
 	$level = $config->get("Level");
+	if(empty($config->get("Level"))) return;
 	$colores = array(T::RED, T::GREEN, T::YELLOW, T::GOLD, T::LIGHT_PURPLE);
 	$rand1 = $colores[array_rand($colores)];
 	$rand2 = $colores[array_rand($colores)];
