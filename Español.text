@@ -1,0 +1,69 @@
+---
+killed_by: §6{victim} §7ha sido asesinado por §a{killer}  
+create_sign: §eHas creado un cartel para la arena §a{arena}!  
+broken_sign: §cNo hay ninguna arena con ese nombre!  
+already_started: §cEl juego ya comenzó!  
+already_playing: §cYa estas jugando!  
+broadcast_join: §6{player} §ese ha unido a la arena §a{arena}  
+joined_to_arena: §eTe has unido a §a{arena}. §c{players}/2  
+joined_new_player: §e{player} §7se unió al juego!  
+creating_new_arena: §aComienza a configurar la arena con /practice name <name>
+player_creating_arena: §cYa hay un jugador creando una arena!
+need_creator: §cNecesitas estar en el modo creador!
+new_arena_name: §aArena {arena} creada!
+pos1: §6Continua con §e/practice pos1
+arena_name_exists: §cHay una arena con ese nombre... por favor pon otro nombre!
+no_numbers: §cPor favor usa letras enves de numeros!
+pos1_done: §ePrimera posicion creada!
+pos1_needed: §cNecesitas poner el nombre de la arena primero!
+pos2: §6Continua con §e/practice pos2
+pos2_done: §ePosiciones creadas!
+pos2_needed: §cNecesitas poner la primera posición primero!
+armor: §6Continua con §e/practice armor  
+armor_done: §eArmadura agregada!
+armor_need: §cNecesitas poner la armadura primero!
+name_missing: §cNecesitas poner el nombre primero
+items: §6Continua con §e/practice items
+arena_done: §aJuego completado!
+practice_make: §a/practice make §7[§6Crea una nueva arena!§7]
+practice_arena: §a/arena §7[§6Mira los comandos para las arenas§7]
+practice_editor: §a/practice editor §7[§6Unete al modo editor!§7]
+practice_set_items: §a/practice setitems <arena> §7[§6Pon nuevos items a una arena (Necesitas estar en el modo editor!)§7]
+practice_set_armor: §a/practice setarmor <arena> §7[§6Pon una nueva armadura para una arena (Necesitas estar en el modo editor!)§7]
+practice_arenatype: §a/practice <onevone | kohi> <arena> §7[§6Selecciona un tipo de juego para alguna arena (Necesitas estar en el modo editor!)§7]
+practice_done: §a/practice done §7[§6Deja el modo editor!§7]
+enable_editor_mode: §aEstas en el modo editor ahora!
+set_onevone: §aHas cambiado el tipo de juego ha 1vs1 para la arena §6{arena}
+already_onevone: §eEsta arena ya esta en modo 1vs1
+game_no_exists: §cEsta arena no existe!
+need_editor: §cNecesitas estar en el modo editor para usar este comando
+set_kohi: §aHas cambiado el tipo de juego ha potpvp para la arena §6{arena}
+already_kohi: §eEsta arena ya es potpvp
+set_new_armor: §aHas cambiado la armadura para la arena {arena}
+set_new_items: §aHas cambiado los items para la arena {arena}
+leave_editor: §cSaliste del modo editor!
+you_are_no_playing: §cNo estas jugando!
+you_left_from_game: §eSaliste del juego!
+sent_request: §5Enviaste una solicitud a §c{player}
+new_request: §a{sender} §6te envio una solicitud para un duelo  escribe /arena accept §a{sender} §6para aceptarla!
+requested: §cEste jugador ya le envio una solicitud a otro jugador!
+already_sent_request: §cYa le enviaste una solicitud a otro jugador  si la quieres cancelar escribe /arena!
+cannot_duel: §cTienes que cancelar o aceptar tu solicitud primero para enviar alguna a otros jugadores!
+duel_process: §cEste jugador ya tiene una solicitud!
+no_duel_youselft: §cNo te puedes enviar una solicitud a ti mismo xD
+player_offline: §cEste jugador no esta en linea!
+no_free_arenas: §cNo hay arenas libres para un duelo!
+not_request: §cEste jugador no esta en tu lista de solicitudes! 
+none_request: §cNo tienes ninguna solicitud para duelo!
+decline: §eHas cancelado la solicitud de §a{player}!
+declined: §a{sender} §ccancelo la solicitud!
+no_request_sent: §cEste jugador no te ha enviado alguna solicitud!
+cancelled_request: §aCancelaste tu solicitud de duelo!
+cancel: §c{sender} §6cancelo su solicitud de duelo!
+no_duel_request_sent: §cNo has enviado ninguna solicitud
+waiting_popup: '§eEsperando por tu rival: §6{players} | 2'
+game_started: §aEl juego comenzo  buena suerte!
+win_message: '§6{player} §egano un duelo en la arena: §a{arena}'
+time_over: §7El tiempo se acabo  buena suerte en la próxima!
+no_win: '§cNadie gano en la arena: §e{arena}'
+...
