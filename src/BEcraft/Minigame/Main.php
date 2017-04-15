@@ -951,7 +951,7 @@ class Main extends PluginBase implements Listener{
 	$sender->setHealth(20);
 	$sender->getInventory()->clearAll();
 	$sender->teleport(Server::getInstance()->getDefaultLevel()->getSafeSpawn());
-	$sender->sendMessage($this->messages->get,("you_left_from_game"));
+	$sender->sendMessage($this->messages->get("you_left_from_game"));
 	}else{
 	$sender->sendMessage($this->messages->get("you_are_no_playing"));
 	}
