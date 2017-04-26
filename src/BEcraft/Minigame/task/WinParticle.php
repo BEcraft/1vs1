@@ -17,7 +17,7 @@ use BEcraft\Minigame\Main;
 
 class WinParticle extends PluginTask{
 	
-	public $time = 30;
+	public $time = 20;
 	public $player;
 	
 	public function __construct(Main $main, Player $player){

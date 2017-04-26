@@ -2,36 +2,29 @@
 
 namespace BEcraft\Minigame;
 
-use pocketmine\event\player\PlayerJoinEvent;
-use pocketmine\event\player\PlayerQuitEvent;
-use pocketmine\event\block\BlockBreakEvent;
-use pocketmine\event\block\BlockPlaceEvent;
-use pocketmine\event\player\PlayerMoveEvent;
-use pocketmine\event\player\PlayerDeathEvent;
-use pocketmine\event\entity\EntityDamageByEntityEvent;
-use pocketmine\event\entity\EntityDamageEvent;
+use pocketmine\event\player\{PlayerQuitEvent, PlayerJoinEvent, PlayerInteractEvent, PlayerDeathEvent, PlayerMoveEvent};
+use pocketmine\event\block\{BlockPlaceEvent, BlockBreakEvent};
+use pocketmine\event\entity\{EntityDamageByEntityEvent, EntityDamageEvent, EntityLevelChangeEvent};
 use pocketmine\event\block\SignChangeEvent;
-use pocketmine\Server;
+use pocketmine\block\Block;
+use pocketmine\nbt\NBT;
+use pocketmine\tile\Tile;
+use pocketmine\tile\Chest;
+use pocketmine\nbt\tag\{StringTag, IntTag, CompoundTag, ListTag};
+use pocketmine\inventory\{ChestInventory, PlayerInventory};
+use pocketmine\event\inventory\{InventoryCloseEvent, InventoryTransactionEvent};
+use pocketmine\{Server, Player};
 use pocketmine\event\Listener;
 use pocketmine\plugin\PluginBase;
-use pocketmine\utils\Config;
+use pocketmine\utils\{Config, TextFormat as T};
 use pocketmine\tile\Sign;
-use pocketmine\event\entity\EntityLevelChangeEvent;
-use BEcraft\Minigame\task\GameTask;
-use BEcraft\Minigame\task\WinParticle;
-use BEcraft\Minigame\task\SignTask;
-use pocketmine\command\CommandSender;
-use pocketmine\command\Command;
+use BEcraft\Minigame\task\{GameTask, WinParticle, SignTask};
+use pocketmine\command\{CommandSender, Command};
 use pocketmine\item\Item;
-use pocketmine\event\player\PlayerInteractEvent;
 use pocketmine\math\Vector3;
-use pocketmine\Player;
 use pocketmine\entity\Effect;
-use pocketmine\utils\TextFormat as T;
-use pocketmine\level\Position;
-use pocketmine\level\sound\EndermanTeleportSound;
-use pocketmine\level\sound\AnvilUseSound;
-use pocketmine\level\Level;
+use pocketmine\level\{Position, Level};
+use pocketmine\level\sound\{EndermanTeleportSound, AnvilUseSound};
 
 class Main extends PluginBase implements Listener{
 
@@ -53,6 +46,9 @@ class Main extends PluginBase implements Listener{
 	
 	public $games = array();
 	
+	public $blocks = array();
+	
+	
 	public function onLoad(){
 	$this->getLogger()->info(T::GOLD."Loading");
 	}
@@ -63,12 +59,12 @@ class Main extends PluginBase implements Listener{
 	
 	public function onEnable(){
 	$this->getServer()->getPluginManager()->registerEvents($this, $this);
+	$this->getLogger()->info(T::GREEN."Enabled!");
 	$this->createConfig();
 	$this->loadArenas();
 	$this->updateStatus();
 	$this->updateSign();
 	$this->setArenas();
-	$this->getLogger()->info(T::GREEN."Enabled!");
 	}
 	
 	public function createConfig(){
@@ -161,12 +157,13 @@ class Main extends PluginBase implements Listener{
 	 *=======================
 	 */
 	public function updateStatus(){
-	if(!empty($this->getDataFolder()."Arenas/")){
+	if(empty($this->getDataFolder()."Arenas/")) return;
 	$scan = scandir($this->getDataFolder()."Arenas/");
 	foreach($scan as $files){
 	if($files !== ".." and $files !== "."){
 	$name = str_replace(".yml", "", $files);
 	$arena = new Config($this->getDataFolder()."Arenas/".$name.".yml", Config::YAML);
+	if(empty($arena->get("Status"))) continue;
 	$status = $arena->get("Status");
 	if($status == "running"){
 	$arena->set("Status", "waiting");
@@ -175,7 +172,6 @@ class Main extends PluginBase implements Listener{
 	if(empty($arena->get("Type"))){
 	$arena->set("Type", "onevone");
 	$arena->save();
-	}
     }
 	}
 	}
@@ -205,21 +201,21 @@ class Main extends PluginBase implements Listener{
 	 *=======================
 	 */
 	public function loadArenas(){
-	if(!empty($this->getDataFolder()."Arenas/")){
+	$this->getLogger()->notice(T::GOLD."Loading arenas");
+	if(empty($this->getDataFolder()."Arenas/")) return;
 	$scan = scandir($this->getDataFolder()."Arenas/");
 	foreach($scan as $files){
 	if($files !== ".." and $files !== "."){
 	$name = str_replace(".yml", "", $files);
+	if($name == "") continue;
 	$arena = new Config($this->getDataFolder()."Arenas/".$name.".yml", Config::YAML);
 	if(empty($arena->get("Level"))) return;
-	if(!$this->getServer()->getLevelByName($arena->get("Level")) instanceof Level) return;
 	$level = $arena->get("Level");
-    $world = $this->getServer()->getLevelByName($level);
 	$this->getServer()->loadLevel($level);
+    $world = $this->getServer()->getLevelByName($level);
+    if(!$world instanceof Level) continue;
 	$world->setTime(0);
 	$world->stopTime();
-	$this->getLogger()->notice(T::GOLD."\nLoading arenas: \n".T::GREEN.$level);
-	}
 	}
 	}
 	}
@@ -248,7 +244,7 @@ class Main extends PluginBase implements Listener{
 	 *=======================
 	 */
 	public function addPlayer(Player $player, $game){
-	$this->games[$game][] = $player;
+	$this->games[$game][$player->getName()] = $player;
 	}
 	
 	/*
@@ -261,9 +257,32 @@ class Main extends PluginBase implements Listener{
 	foreach($scan as $files){
 	if($files !== ".." and $files !== "."){
 	$game = str_replace(".yml", "", $files);
-	$search = array_search($player, $this->games[$game]);
-	unset($this->games[$game][$search]);
+	if(isset($this->games[$game][$player->getName()])){
+	unset($this->games[$game][$player->getName()]);
 	}
+	}
+	}
+	if(isset($this->playing[$player->getName()])){
+	unset($this->playing[$player->getName()]);
+	}
+	if(isset($this->move[$player->getName()])){
+	unset($this->move[$player->getName()]);
+	}
+	if(isset($this->creator[$player->getName()])){
+	unset($this->creator[$player->getName()]);
+	}
+	if(isset($this->request[$player->getName()])){
+	$player2 = $player->getServer()->getPlayer($this->request[$player->getName()]);
+	unset($this->sent[$player2->getName()]);
+	unset($this->request[$player->getName()]);
+	}
+	if(isset($this->sent[$player->getName()])){
+	$player2 = $player->getServer()->getPlayer($this->sent[$player->getName()]);
+	unset($this->request[$player2->getName()]);
+	unset($this->sent[$player->getName()]);
+	}
+	if(isset($this->editor[$player->getName()])){
+	unset($this->editor[$player->getName()]);
 	}
 	}
 	
@@ -277,6 +296,7 @@ class Main extends PluginBase implements Listener{
 	foreach($scan as $files){
 	if($files !== ".." and $files !== "."){
 	$game = str_replace(".yml", "", $files);
+	if($game == "") continue;
 	$this->games[$game] = array();
 	}
 	}
@@ -299,25 +319,6 @@ class Main extends PluginBase implements Listener{
 	public function onQuit(PlayerQuitEvent $e){
 	$p = $e->getPlayer();
 	$this->deletePlayer($p);
-	if(in_array($p->getName(), $this->playing)){
-	unset($this->playing[$p->getName()]);
-	}
-	if(in_array($p->getName(), $this->creator)){
-	unset($this->creator[$p->getName()]);
-	}
-	if(isset($this->request[$p->getName()])){
-	$player = $p->getServer()->getPlayer($this->request[$p->getName()]);
-	unset($this->sent[$player->getName()]);
-	unset($this->request[$p->getName()]);
-	}
-	if(isset($this->sent[$p->getName()])){
-	$player = $p->getServer()->getPlayer($this->sent[$p->getName()]);
-	unset($this->request[$player->getName()]);
-	unset($this->sent[$p->getName()]);
-	}
-	if(in_array($p->getName(), $this->editor)){
-	unset($this->editor[$p->getName()]);
-	}
 	}
 	
 	/*
@@ -327,20 +328,20 @@ class Main extends PluginBase implements Listener{
 	 */
 	public function onDeath(PlayerDeathEvent $e){
 	$p = $e->getPlayer();
+	$messages = $this->messages;
 	$cause = $p->getLastDamageCause();
 	if($cause instanceof EntityDamageByEntityEvent){
 	$killer = $cause->getDamager();
 	$victim = $cause->getEntity();
 	if($killer instanceof Player){
-	if(in_array($victim->getName(), $this->playing)){
-	if(in_array($killer->getName(), $this->playing)){
+	if(isset($this->playing[$victim->getName()])){
+	if(isset($this->playing[$killer->getName()])){
 	$e->setDeathMessage("");
 	$e->setDrops([]);
-	$message = $this->messages->get("killed_by");
+	$message = $messages->get("killed_by");
 	$message = str_replace(["{victim}", "{killer}"], [$victim->getName(), $killer->getName()], $message);
 	Server::getInstance()->broadcastMessage($message);
 	$victim->teleport(Server::getInstance()->getDefaultLevel()->getSafeSpawn());
-	unset($this->playing[$victim->getName()]);
 	$this->deletePlayer($victim);
 	}
 	}
@@ -404,17 +405,20 @@ class Main extends PluginBase implements Listener{
 	$e->setLine(3, T::RED."BROKEN");
 	}
 	}
+	}else{
+	$p->sendMessage(T::RED." You dont have permission for create a game sign");
 	}
 	}
 	
 	/*
 	 * =======================
-	 * JOIN TO ARENA BY SIGN
+	 * JOIN TO ARENA BY SIGN AND CHEST
 	 *=======================
 	 */
 	public function onInteract(PlayerInteractEvent $e){
 	$p = $e->getPlayer();
 	$b = $e->getBlock();
+	$item = $e->getItem();
 	$sign = $p->getLevel()->getTile($b);
 	if($sign instanceof Sign){
 	$line = $sign->getText();
@@ -425,7 +429,7 @@ class Main extends PluginBase implements Listener{
 	$arena = new Config($this->getDataFolder()."Arenas/".$game.".yml", Config::YAML);
 	$name = $arena->get("Name");
 	$level = $arena->get("Level");
-	if(!in_array($p->getName(), $this->playing)){
+	if(!isset($this->playing[$p->getName()])){
 	if($this->gamesCount($game) == 0){
 	$this->newTask($game);
 	$pone = $arena->get("PosOne");
@@ -433,6 +437,7 @@ class Main extends PluginBase implements Listener{
 	$z = $pone[2];
 	$ar = $this->getServer()->getLevelByName($level);
 	$y = $pone[1];
+	$ar->loadChunk($x >> 4, $z >> 4);
 	$p->teleport(new Position($x, $y, $z, $ar));
 	$this->addPlayer($p, $game);
 	$this->setKit($p, $game);
@@ -444,6 +449,7 @@ class Main extends PluginBase implements Listener{
 	$z = $ptwo[2];
 	$ar = $this->getServer()->getLevelByName($level);
 	$y = $ptwo[1];
+	$ar->loadChunk($x >> 4, $z >> 4);
 	$p->teleport(new Position($x, $y, $z, $ar));
 	$this->addPlayer($p, $game);
 	$this->setKit($p, $game);
@@ -466,7 +472,7 @@ class Main extends PluginBase implements Listener{
 	public function LevelChange(EntityLevelChangeEvent $e){
 	$p = $e->getEntity();
 	if($p instanceof Player){
-	if((in_array($p->getName(), $this->move)) || (in_array($p->getName(), $this->playing))){
+	if((isset($this->move[$p->getName()])) || (isset($this->playing[$p->getName()]))){
 	if($p->getLevel() !== $this->getServer()->getDefaultLevel()){
 	unset($this->move[$p->getName()]);
 	unset($this->playing[$p->getName()]);
@@ -548,7 +554,7 @@ class Main extends PluginBase implements Listener{
 	 */
 	public function onBreak(BlockBreakEvent $e){
 	$p = $e->getPlayer();
-	if(in_array($p->getName(), $this->playing)){
+	if(isset($this->playing[$p->getName()])){
 	$e->setCancelled(true);
 	}
 	}
@@ -560,7 +566,7 @@ class Main extends PluginBase implements Listener{
 	 */
 	public function onMove(PlayerMoveEvent $e){
 	$p = $e->getPlayer();
-	if(in_array($p->getName(), $this->move)){
+	if(isset($this->move[$p->getName()])){
 	$to = clone $e->getFrom();
 	$to->pitch = $e->getTo()->pitch;
 	$e->setTo($to);
@@ -574,7 +580,7 @@ class Main extends PluginBase implements Listener{
 	 */
 	public function onPlace(BlockPlaceEvent $e){
 	$p = $e->getPlayer();
-	if(in_array($p->getName(), $this->playing)){
+	if(isset($this->playing[$player->getName()])){
 	$e->setCancelled(true);
 	}
 	}
@@ -890,6 +896,7 @@ class Main extends PluginBase implements Listener{
 	$z = $pone[2];
 	$y = $pone[1];
 	$ar = $this->getServer()->getLevelByName($level);
+	$ar->loadChunk($x >> 4, $z >> 4);
 	$sender->teleport(new Position($x, $y, $z, $ar));
 	$this->addPlayer($sender, $game);
 	$this->setKit($sender, $game);
@@ -900,6 +907,7 @@ class Main extends PluginBase implements Listener{
 	$z = $ptwo[2];
 	$y = $ptwo[1];
 	$ar = $this->getServer()->getLevelByName($level);
+	$ar->loadChunk($x >> 4, $z >> 4);
 	$sender->teleport(new Position($x, $y, $z, $ar));
 	$this->addPlayer($sender, $game);
 	$this->setKit($sender, $game);
@@ -924,7 +932,9 @@ class Main extends PluginBase implements Listener{
 	if($file !== ".." and $file !== "."){
 	$name = str_replace(".yml", "", $file);
 	$arena = new Config($this->getDataFolder()."Arenas/".$name.".yml", Config::YAML);
+	if(empty($arena->get("Status"))) continue;
 	$status = $arena->get("Status");
+	$estado = null;
 	if($status == "not set"){
 	$estado = T::GREEN."arena is being created...";
 	}else if($status == "waiting"){
@@ -943,9 +953,7 @@ class Main extends PluginBase implements Listener{
 	 */
     else 
 	if($args[0] == "quit"){
-    if(in_array($sender->getName(), $this->playing)){
-	unset($this->playing[$sender->getName()]);
-	unset($this->move[$sender->getName()]);
+    if(isset($this->playing[$sender->getName()])){
 	$this->deletePlayer($sender);
 	$sender->removeAllEffects();
 	$sender->setHealth(20);
@@ -964,7 +972,7 @@ class Main extends PluginBase implements Listener{
     else 
 	if($args[0] == "duel"){
 	if($sender->getLevel() !== Server::getInstance()->getDefaultLevel()) return;
-	if(in_array($sender->getName(), $this->playing)) return;
+	if(isset($this->playing[$sender->getName()])) return;
 	$vs = $args[1];
 	$player = $sender->getServer()->getPlayer($vs);
 	if($player instanceof Player){
@@ -996,7 +1004,7 @@ class Main extends PluginBase implements Listener{
     else 
 	if($args[0] == "accept"){
 	if($sender->getLevel() !== Server::getInstance()->getDefaultLevel()) return;
-	if(in_array($sender->getName(), $this->playing)) return;
+	if(isset($this->playing[$sender->getName()]))) return;
 	if(isset($this->request[$sender->getName()])){
 	if($args[1] == $this->request[$sender->getName()]){
 	$search = $this->request[$sender->getName()];
@@ -1004,6 +1012,7 @@ class Main extends PluginBase implements Listener{
 	if($player instanceof Player){
     unset($this->request[$sender->getName()]);
 	unset($this->sent[$player->getName()]);
+	if(isset($this->playing[$player->getName()])) return;
 	$scan = scandir($this->getDataFolder()."Arenas/");
 	foreach($scan as $arenas){
 	if($arenas !== ".." and $arenas !== "."){
@@ -1024,6 +1033,7 @@ class Main extends PluginBase implements Listener{
 	$z = $pone[2];
 	$y = $pone[1];
 	$ar = $this->getServer()->getLevelByName($level);
+	$ar->loadChunk($x >> 4, $z >> 4);
 	$sender->teleport(new Position($x, $y, $z, $ar));
 	$this->addPlayer($sender, $name);
 	$this->setKit($sender, $name);
@@ -1039,6 +1049,7 @@ class Main extends PluginBase implements Listener{
 	$z = $ptwo[2];
 	$y = $ptwo[1];
 	$ar = $this->getServer()->getLevelByName($level);
+	$ar->loadChunk($x >> 4, $z >> 4);
 	$player->teleport(new Position($x, $y, $z, $ar));
 	$this->addPlayer($player, $name);
 	$this->setKit($player, $name);

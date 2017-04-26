@@ -5,7 +5,7 @@ api:
 - 3.0.0
 - 3.0.0-ALPHA4
 main: BEcraft\Minigame\Main
-version: 1.2
+version: 3.8
 author: BEcraft
 commands:
  practice:

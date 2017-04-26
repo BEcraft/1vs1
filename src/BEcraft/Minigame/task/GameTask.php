@@ -30,9 +30,11 @@ class GameTask extends PluginTask{
     
     public function onRun($tick){
 	$game = $this->game;
-	if($this->plugin->arenaExists($game)){
-	$config = new Config($this->plugin->getDataFolder()."Arenas/".$game.".yml", Config::YAML);
-	$messages = new Config($this->plugin->getDataFolder()."Messages.yml", Config::YAML);
+	$plugin = $this->plugin;
+	$partida = $plugin->games[$game];
+	if($plugin->arenaExists($game)){
+	$config = new Config($plugin->getDataFolder()."Arenas/".$game.".yml", Config::YAML);
+	$messages = new Config($plugin->getDataFolder()."Messages.yml", Config::YAML);
 	$name = $config->get("Name");
 	$level = $config->get("Level");
 	/*
@@ -43,15 +45,15 @@ class GameTask extends PluginTask{
 	if($this->gamesCount($game) == 1 and $this->status == "waiting"){
 	$config->set("Status", "waiting");
 	$config->save();
-	$player = $this->plugin->games[$game][0];
+	$player1 = Server::getInstance()->getPlayer(array_keys($partida)[0]);
 	$popup = $messages->get("waiting_popup");
 	$popup = str_replace("{players}", $this->gamesCount($game), $popup);
-	$player->sendPopup($popup);
+	$player1->sendPopup($popup);
     $blind = Effect::getEffect(15);
 	$blind->setDuration(9999);
 	$blind->setAmplifier(10);
 	$blind->setVisible(false);
-	$player->addEffect($blind);
+	$player1->addEffect($blind);
 	}
 	/*
 	 * =======================
@@ -64,8 +66,8 @@ class GameTask extends PluginTask{
 	$this->status = "running";
 	$config->set("Status", "running");
 	$config->save();
-    $player1 = $this->plugin->games[$game][0];
-    $player2 = $this->plugin->games[$game][1];
+    $player1 = Server::getInstance()->getPlayer(array_keys($partida)[0]);
+    $player2 = Server::getInstance()->getPlayer(array_keys($partida)[1]);
     $player1->sendPopup(T::YELLOW."Time: ".T::GOLD.$this->getTime($this->time).T::GRAY." || ".T::YELLOW."Oponent: ".T::GOLD.$player2->getName());
     $player2->sendPopup(T::YELLOW."Time: ".T::GOLD.$this->getTime($this->time).T::GRAY." || ".T::YELLOW."Openent: ".T::GOLD.$player1->getName());
     /*
@@ -90,18 +92,20 @@ class GameTask extends PluginTask{
 	 */
     else 
     if($this->gamesCount($game) == 1 and $this->status == "running" and $this->time > 0){
-	$this->plugin->getServer()->getScheduler()->cancelTask($this->getTaskId());
-	foreach($this->plugin->games[$game] as $player){
+	$plugin->getServer()->getScheduler()->cancelTask($this->getTaskId());
+	foreach($plugin->games[$game] as $player){
 	$player->getInventory()->clearAll();
 	$player->setHealth(20);
+	$player->removeAllEffects();
+	$player->setFood(20);
+	$player->setGamemode(0);
 	$win = $messages->get("win_message");
 	$win = str_replace(["{player}", "{arena}"], [$player->getName(), $game], $win);
 	Server::getInstance()->broadcastMessage($win);
-	unset($this->plugin->playing[$player->getName()]);
-	$this->plugin->deletePlayer($player);
-	$this->plugin->games[$game] = [];
-	$player->teleport($this->plugin->getServer()->getDefaultLevel()->getSafeSpawn());
-	$this->plugin->WinTask($player);
+	$plugin->deletePlayer($player);
+	$plugin->games[$game] = [];
+	$player->teleport($plugin->getServer()->getDefaultLevel()->getSafeSpawn());
+	$plugin->WinTask($player);
 	$this->status = "waiting";
 	$config->set("Status", "waiting");
 	$config->save();
@@ -115,7 +119,7 @@ class GameTask extends PluginTask{
 	 */
     else 
     if($this->gamesCount($game) == 0){
-	$this->plugin->getServer()->getScheduler()->cancelTask($this->getTaskId());
+	$plugin->getServer()->getScheduler()->cancelTask($this->getTaskId());
 	}
 	/*
 	 * =======================
@@ -124,17 +128,17 @@ class GameTask extends PluginTask{
 	 */
     else 
     if($this->gamesCount($game) == 2 and $this->time < 1 and $this->status == "running"){
-	$this->plugin->getServer()->getScheduler()->cancelTask($this->getTaskId());
+	$plugin->getServer()->getScheduler()->cancelTask($this->getTaskId());
 	 /*
 	 * =======================
 	 * GET FIRST PLAYER
 	 *=======================
 	 */
-	$player1 = $this->plugin->games[$game][0];
+	$player1 = Server::getInstance()->getPlayer(array_keys($partida)[0]);
 	$player1->getInventory()->clearAll();
 	$player1->setHealth(20);
-	unset($this->plugin->playing[$player1->getName()]);
-	$this->plugin->removePlayer($player1);
+	unset($plugin->playing[$player1->getName()]);
+	$plugin->removePlayer($player1);
 	$player1->teleport(Server::getInstance()->getDefaultLevel()->getSafeSpawn());
 	$nowin = $messages->get("no_win");
 	$nowin = str_replace("{arena}", $game, $nowin);
@@ -145,7 +149,7 @@ class GameTask extends PluginTask{
 	 * GET SECOND PLAYER
 	 *=======================
 	 */
-	$player2 = $this->plugin->games[$game][1];
+	$player2 = Server::getInstance()->getPlayer(array_keys($partida)[1]);
 	$player2->getInventory()->clearAll();
 	$player2->setHealth(20);
 	unset($this->plugin->playing[$player2->getName()]);
