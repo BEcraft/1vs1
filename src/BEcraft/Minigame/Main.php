@@ -18,7 +18,7 @@ use pocketmine\event\Listener;
 use pocketmine\plugin\PluginBase;
 use pocketmine\utils\{Config, TextFormat as T};
 use pocketmine\tile\Sign;
-use BEcraft\Minigame\task\{GameTask, WinParticle, SignTask};
+use BEcraft\Minigame\task\{GameTask, WinParticle, SignTask, QuickJoin};
 use pocketmine\command\{CommandSender, Command};
 use pocketmine\item\Item;
 use pocketmine\math\Vector3;
@@ -1004,7 +1004,7 @@ class Main extends PluginBase implements Listener{
     else 
 	if($args[0] == "accept"){
 	if($sender->getLevel() !== Server::getInstance()->getDefaultLevel()) return;
-	if(isset($this->playing[$sender->getName()]))) return;
+	if(isset($this->playing[$sender->getName()])) return;
 	if(isset($this->request[$sender->getName()])){
 	if($args[1] == $this->request[$sender->getName()]){
 	$search = $this->request[$sender->getName()];
